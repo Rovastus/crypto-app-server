@@ -1,5 +1,16 @@
-# Apollo + Typescript + Codegen + Prisma + File split boilerplate
+# Blog
 
-Run npm install and npm start to run the graphql application. <br/>
-Graphql url is http://localhost:4000/graphql
+### Try It
 
+```
+run DB via docker-compose.yml
+```
+
+```
+yarn -s prisma generate
+yarn -s prisma migrate reset --preview-feature
+```
+
+```
+yarn && yarn dev
+```

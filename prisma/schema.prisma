@@ -1,16 +1,110 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL_WITH_SCHEMA")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model Portpholio {
+  id       BigInt @id @default(autoincrement()) @db.BigInt
+  name     String @unique
+  exportId BigInt
+  export   Export @relation(fields: [exportId], references: [id])
 }
 
-model User {
-  id   Int     @id @default(autoincrement())
-  name String?
+model Export {
+  id          BigInt        @id @default(autoincrement()) @db.BigInt
+  name        String        @unique
+  jsonData    String
+  deposit     Deposit[]
+  earn        Earn[]
+  portpholio  Portpholio[]
+  transaction Transaction[]
+  wallet      Wallet[]
+  withdraw    Withdraw[]
+}
+
+model Transaction {
+  id         BigInt          @id @default(autoincrement()) @db.BigInt
+  time       DateTime
+  type       TransactionType
+  amount     Decimal
+  amountCoin String
+  price      Decimal
+  priceInEur Decimal
+  priceCoin  String
+  fee        Decimal
+  feeInEur   Decimal
+  feeCoin    String
+  exportId   BigInt
+  export     Export          @relation(fields: [exportId], references: [id])
+  taxEvent   TaxEvent[]
+  wallet     Wallet[]
+}
+
+model Deposit {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  time       DateTime
+  amount     Decimal
+  amountCoin String
+  exportId   BigInt
+  export     Export   @relation(fields: [exportId], references: [id])
+}
+
+model Withdraw {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  time       DateTime
+  amount     Decimal
+  amountCoin String
+  exportId   BigInt
+  export     Export   @relation(fields: [exportId], references: [id])
+}
+
+model Earn {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+  time        DateTime
+  amount      Decimal
+  amountInEur Decimal
+  amountCoin  String
+  exportId    BigInt
+  export      Export   @relation(fields: [exportId], references: [id])
+  wallet      Wallet[]
+}
+
+model Wallet {
+  id            BigInt       @id @default(autoincrement()) @db.BigInt
+  amount        Decimal
+  amountCoin    String
+  remain        Decimal
+  portpholioId  BigInt
+  transactionId BigInt?
+  earnId        BigInt?
+  earn          Earn?        @relation(fields: [earnId], references: [id])
+  portpholio    Export       @relation(fields: [portpholioId], references: [id])
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model TaxEvent {
+  id                BigInt          @id @default(autoincrement()) @db.BigInt
+  amount            Decimal
+  expenses          Decimal
+  profit            Decimal
+  taxToBePaid       Decimal
+  expensesDetailsId BigInt
+  transactionId     BigInt
+  expensesDetails   ExpensesDetails @relation(fields: [expensesDetailsId], references: [id])
+  transaction       Transaction     @relation(fields: [transactionId], references: [id])
+}
+
+model ExpensesDetails {
+  id       BigInt     @id @default(autoincrement()) @db.BigInt
+  amount   Decimal
+  taxEvent TaxEvent[]
+}
+
+enum TransactionType {
+  BUY
+  SELL
 }
