@@ -6,11 +6,13 @@ export const Earn = objectType({
     t.model.id()
     t.model.time()
     t.model.amount()
-    t.model.amountInEur()
     t.model.amountCoin()
     t.model.exportId()
     t.model.export()
-    t.model.wallet()
+    t.model.earnTaxEventId()
+    t.model.earnTaxEvent()
+    t.model.cryptoCoinInWalletId()
+    t.model.cryptoCoinInWallet()
   },
 })
 

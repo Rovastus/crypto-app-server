@@ -5,11 +5,12 @@ import {
   list,
   inputObjectType,
   mutationField,
-  stringArg
+  stringArg,
 } from 'nexus'
 
 import * as PrismaTypes from '.prisma/client'
-import * as moment from 'moment';
+import { getPortpholioById } from '../../utils/portpholioUtils'
+import { processExportData } from '../../utils/exportUtils'
 
 export const Export = objectType({
   name: 'Export',
@@ -17,11 +18,11 @@ export const Export = objectType({
     t.model.id()
     t.model.name()
     t.model.jsonData()
+    t.model.portpholioId()
+    t.model.portpholio()
     t.model.deposit()
     t.model.earn()
-    t.model.portpholio()
     t.model.transaction()
-    t.model.wallet()
     t.model.withdraw()
   },
 })
@@ -32,11 +33,12 @@ export const Query = queryField((t) => {
 })
 
 export const Mutation = mutationField((t) => {
-  t.field('processExport', {
-    type: 'Boolean',
+  t.field('importExport', {
+    type: 'Export',
     args: {
-      exportName: nonNull(stringArg()),
-      data: nonNull(
+      portpholioId: nonNull('BigInt'),
+      name: nonNull(stringArg()),
+      jsonData: nonNull(
         list(
           nonNull(
             inputObjectType({
@@ -55,25 +57,54 @@ export const Mutation = mutationField((t) => {
       ),
     },
     async resolve(_root, args, ctx) {
-      const exportData: PrismaTypes.Prisma.ExportCreateInput = {
-        name: args.exportName,
-        jsonData: JSON.stringify(args.data),
-      }
-      const createdExport = await ctx.prisma.export.create({ data: exportData })
-      const exportConnect: PrismaTypes.Prisma.ExportCreateNestedOneWithoutEarnInput = {
-        connect: {
-          id: createdExport.id,
+      const portpholio: PrismaTypes.Portpholio = await getPortpholioById(
+        args.portpholioId,
+        ctx.prisma,
+      )
+
+      const processedData = await processExportData(
+        args.jsonData,
+        portpholio,
+        ctx.prisma,
+      )
+      const exportCreateInput: PrismaTypes.Prisma.ExportCreateInput = {
+        portpholio: {
+          connect: {
+            id: args.portpholioId,
+          },
+        },
+        name: args.name,
+        jsonData: JSON.stringify(args.jsonData),
+        earn: {
+          create: processedData.earns,
+        },
+        transaction: {
+          create: processedData.transactions,
+        },
+        withdraw: {
+          create: processedData.withdraws,
+        },
+        deposit: {
+          create: processedData.deposits,
         },
       }
-      const earnData: PrismaTypes.Prisma.EarnCreateInput = {
-        time: moment.utc(args.data[0].UTC_Time).toDate(),
-        amount: args.data[0].Change,
-        amountInEur: args.data[0].Change,
-        amountCoin: args.data[0].Coin,
-        export: exportConnect,
-      }
-      await ctx.prisma.earn.create({ data: earnData })
-      return true
+
+      const exportObj = await ctx.prisma.export.create({
+        data: exportCreateInput,
+      })
+
+      console.log(exportObj)
+
+      // calculate transaction taxes
+      const transactions = await ctx.prisma.transaction.findMany({
+        where: { exportId: exportObj.id },
+      })
+
+      return await ctx.prisma.export.findUnique({
+        where: {
+          id: exportObj.id,
+        },
+      })
     },
   })
 })
