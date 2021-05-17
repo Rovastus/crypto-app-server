@@ -190,7 +190,7 @@ async function createEarnCreateInput(
   const priceInFiat = pricePerCoinInFiat * data.Change
   const earnTaxEvent: PrismaTypes.Prisma.EarnTaxEventCreateNestedOneWithoutEarnInput = {
     create: {
-      profitInFiat: priceInFiat,
+      gainInFiat: priceInFiat,
     },
   }
   const cryptoCoinInWallet: PrismaTypes.Prisma.CryptoCoinInWalletCreateNestedOneWithoutEarnInput = {

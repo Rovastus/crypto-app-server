@@ -28,31 +28,32 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   prisma: PrismaTypes.PrismaClient,
 ): Promise<number> {
   const symbol = await getSymbol(fromCoin + toFiat, prisma)
-  console.log(symbol)
   if (symbol) {
     // pair to fiat found
-    const coinPairPriceHistory = await getCoinPairPriceHistory(
-      symbol.id,
-      time,
-      prisma,
-    )
-    if (coinPairPriceHistory) {
-      return coinPairPriceHistory.price.toNumber()
-    }
-    const startTime = time.valueOf()
-    const endTime = time.valueOf() + 59999.0
-    const url = `https://www.binance.com/api/v3/klines?symbol=${symbol.pair}&interval=1m&startTime=${startTime}&endTime=${endTime}`
-    const response = await axios.default.get(url)
-    const price = response.data[0][4]
-    console.log(price)
-    await prisma.coinPairPriceHistory.create({
-      data: { price: price, time: time, url: url, coinPairId: symbol.id },
-    })
-    return price
+    return await getCoinPriceFromBinanceApi(symbol, time, prisma)
   }
 
-  // pair to fiat found, calculate via USDT
-  return 0
+  // pair to fiat not found, calculate via USDT
+  const symbolUsdt = await getSymbol(fromCoin + 'USDT', prisma)
+  const symbolFiat = await getSymbol(toFiat + 'USDT', prisma)
+
+  if (!symbolUsdt || !symbolFiat) {
+    throw new Error(`${symbolUsdt} or ${symbolFiat} coin pair not exists.`)
+  }
+
+  const coinUSDTPrice = await getCoinPriceFromBinanceApi(
+    symbolUsdt,
+    time,
+    prisma,
+  )
+
+  const fiatUSDTPrice = await getCoinPriceFromBinanceApi(
+    symbolFiat,
+    time,
+    prisma,
+  )
+
+  return coinUSDTPrice * fiatUSDTPrice
 }
 
 async function getSymbol(
@@ -78,4 +79,33 @@ async function getCoinPairPriceHistory(
       },
     },
   })
+}
+
+async function getCoinPriceFromBinanceApi(
+  symbol: PrismaTypes.CoinPair,
+  time: Date,
+  prisma: PrismaTypes.PrismaClient,
+): Promise<number> {
+  // check if record is already in DB
+  const coinPairPriceHistory = await getCoinPairPriceHistory(
+    symbol.id,
+    time,
+    prisma,
+  )
+  if (coinPairPriceHistory) {
+    return coinPairPriceHistory.price.toNumber()
+  }
+
+  // Binance API call
+  const startTime = time.valueOf()
+  const endTime = time.valueOf() + 59999.0
+  const url = `https://www.binance.com/api/v3/klines?symbol=${symbol.pair}&interval=1m&startTime=${startTime}&endTime=${endTime}`
+  const response = await axios.default.get(url)
+  const price = response.data[0][4]
+
+  await prisma.coinPairPriceHistory.create({
+    data: { price: price, time: time, url: url, coinPairId: symbol.id },
+  })
+
+  return price
 }

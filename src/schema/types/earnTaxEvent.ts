@@ -4,7 +4,7 @@ export const EarnTaxEvent = objectType({
   name: 'EarnTaxEvent',
   definition(t) {
     t.model.id()
-    t.model.profitInFiat()
+    t.model.gainInFiat()
     t.model.earn()
   },
 })

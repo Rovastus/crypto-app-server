@@ -11,6 +11,7 @@ import {
 import * as PrismaTypes from '.prisma/client'
 import { getPortpholioById } from '../../utils/portpholioUtils'
 import { processExportData } from '../../utils/exportUtils'
+import { calculateTaxesForTransactions } from '../../utils/taxUtils'
 
 export const Export = objectType({
   name: 'Export',
@@ -93,12 +94,15 @@ export const Mutation = mutationField((t) => {
         data: exportCreateInput,
       })
 
-      console.log(exportObj)
-
       // calculate transaction taxes
       const transactions = await ctx.prisma.transaction.findMany({
         where: { exportId: exportObj.id },
+        orderBy: {
+          time: 'asc',
+        },
       })
+
+      await calculateTaxesForTransactions(portpholio, transactions, ctx.prisma)
 
       return await ctx.prisma.export.findUnique({
         where: {
