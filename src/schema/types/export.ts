@@ -45,12 +45,10 @@ export const Mutation = mutationField((t) => {
             inputObjectType({
               name: 'ProcessExportInput',
               definition(t) {
-                t.nonNull.string('UTC_Time')
-                t.nonNull.string('Account')
-                t.nonNull.string('Operation')
-                t.nonNull.string('Coin')
-                t.nonNull.float('Change')
-                t.nonNull.string('Remark')
+                t.nonNull.string('utcTime')
+                t.nonNull.string('operation')
+                t.nonNull.string('coin')
+                t.nonNull.float('change')
               },
             }),
           ),

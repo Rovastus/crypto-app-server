@@ -26,8 +26,18 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   toFiat: string,
   time: Date,
   prisma: PrismaTypes.PrismaClient,
-): Promise<number> {
-  const symbol = await getSymbol(fromCoin + toFiat, prisma)
+): Promise<Decimal> {
+  if ('BETH' === fromCoin) {
+    return getBethPrice(toFiat, time, prisma)
+  }
+
+  let symbol = await getSymbol(fromCoin + toFiat, prisma)
+  if (symbol) {
+    // pair to fiat found
+    return await getCoinPriceFromBinanceApi(symbol, time, prisma)
+  }
+
+  symbol = await getSymbol(toFiat + fromCoin, prisma)
   if (symbol) {
     // pair to fiat found
     return await getCoinPriceFromBinanceApi(symbol, time, prisma)
@@ -38,7 +48,11 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   const symbolFiat = await getSymbol(toFiat + 'USDT', prisma)
 
   if (!symbolUsdt || !symbolFiat) {
-    throw new Error(`${symbolUsdt} or ${symbolFiat} coin pair not exists.`)
+    throw new Error(
+      `${symbolUsdt} (${fromCoin + 'USDT'}) or ${symbolFiat} (${
+        toFiat + 'USDT'
+      })  coin pair not exists.`,
+    )
   }
 
   const coinUSDTPrice = await getCoinPriceFromBinanceApi(
@@ -53,7 +67,7 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
     prisma,
   )
 
-  return coinUSDTPrice * fiatUSDTPrice
+  return coinUSDTPrice.mul(fiatUSDTPrice).toDecimalPlaces(8)
 }
 
 async function getSymbol(
@@ -85,7 +99,7 @@ async function getCoinPriceFromBinanceApi(
   symbol: PrismaTypes.CoinPair,
   time: Date,
   prisma: PrismaTypes.PrismaClient,
-): Promise<number> {
+): Promise<Decimal> {
   // check if record is already in DB
   const coinPairPriceHistory = await getCoinPairPriceHistory(
     symbol.id,
@@ -93,19 +107,47 @@ async function getCoinPriceFromBinanceApi(
     prisma,
   )
   if (coinPairPriceHistory) {
-    return coinPairPriceHistory.price.toNumber()
+    return coinPairPriceHistory.price
   }
 
   // Binance API call
-  const startTime = time.valueOf()
-  const endTime = time.valueOf() + 59999.0
+  const startTime = time.valueOf() - 59999.0
+  const endTime = time.valueOf()
   const url = `https://www.binance.com/api/v3/klines?symbol=${symbol.pair}&interval=1m&startTime=${startTime}&endTime=${endTime}`
   const response = await axios.default.get(url)
-  const price = response.data[0][4]
+  const price = new Decimal(response.data[0][4]).toDecimalPlaces(8)
 
   await prisma.coinPairPriceHistory.create({
     data: { price: price, time: time, url: url, coinPairId: symbol.id },
   })
 
   return price
+}
+
+async function getBethPrice(
+  toFiat: string,
+  time: Date,
+  prisma: PrismaTypes.PrismaClient,
+): Promise<Decimal> {
+  // calculate via ETH
+  const symbolBeth = await getSymbol('BETHETH', prisma)
+  const symbolFiat = await getSymbol('ETH' + toFiat, prisma)
+
+  if (!symbolBeth || !symbolFiat) {
+    throw new Error(`${symbolBeth} or ${symbolFiat} coin pair not exists.`)
+  }
+
+  const bethEthPrice = await getCoinPriceFromBinanceApi(
+    symbolBeth,
+    time,
+    prisma,
+  )
+
+  const fiatEthPrice = await getCoinPriceFromBinanceApi(
+    symbolFiat,
+    time,
+    prisma,
+  )
+
+  return bethEthPrice.mul(fiatEthPrice).toDecimalPlaces(8)
 }

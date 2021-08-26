@@ -2,6 +2,7 @@ import * as PrismaTypes from '.prisma/client'
 import * as NexusTypes from 'nexus-typegen'
 import * as moment from 'moment'
 import { getPricePerCoinInFiat } from './binanceApi'
+import { Decimal } from '@prisma/client/runtime'
 
 export const processExportData = async function processExportData(
   data: NexusTypes.NexusGenInputs['ProcessExportInput'][],
@@ -21,10 +22,28 @@ export const processExportData = async function processExportData(
   }
 
   for (let i = 0; i < data.length; i++) {
-    switch (data[i].Operation) {
+    switch (data[i].operation) {
+      case 'ETH 2.0 staking purchase':
+        processedData.transactions.push(
+          await createTransactionCreateInput(
+            createTransactionsRecordForEth(data[i]),
+            portpholio,
+            prisma,
+          ),
+        )
+        break
+      case 'ETH 2.0 staking interest':
+        processedData.earns.push(
+          await createEarnCreateInput(data[i], portpholio, prisma),
+        )
+        break
       case 'POS savings purchase':
+      case 'Savings purchase':
+      case 'POS savings redemption':
+      case 'Savings Principal redemption':
         break
       case 'POS savings interest':
+      case 'Savings Interest':
         processedData.earns.push(
           await createEarnCreateInput(data[i], portpholio, prisma),
         )
@@ -51,11 +70,49 @@ export const processExportData = async function processExportData(
         processedData.withdraws.push(createWithdrawCreateInput(data[i]))
         break
       default:
-        throw new Error(`${data[i].Operation} operation not supported.`)
+        throw new Error(`${data[i].operation} operation not supported.`)
     }
   }
 
   return processedData
+}
+
+/*
+-------------------
+  ETH 2.0 Staking
+-------------------
+*/
+function createTransactionsRecordForEth(data: {
+  coin: string
+  change: number
+  operation: string
+  utcTime: string
+}): {
+  coin: string
+  change: number
+  operation: string
+  utcTime: string
+}[] {
+  const transactionRecordsEth = new Array()
+  transactionRecordsEth.push({
+    coin: 'ETH',
+    change: data.change,
+    operation: 'Transaction Related',
+    utcTime: data.utcTime,
+  })
+  transactionRecordsEth.push({
+    coin: 'BETH',
+    change: data.change,
+    operation: 'Buy',
+    utcTime: data.utcTime,
+  })
+  transactionRecordsEth.push({
+    coin: 'EUR',
+    change: 0,
+    operation: 'Fee',
+    utcTime: data.utcTime,
+  })
+  return transactionRecordsEth
 }
 
 /*
@@ -70,8 +127,8 @@ async function createTransactionCreateInput(
   prisma: PrismaTypes.PrismaClient,
 ): Promise<PrismaTypes.Prisma.TransactionCreateWithoutExportInput> {
   if (
-    data[0].UTC_Time !== data[1].UTC_Time ||
-    data[0].UTC_Time !== data[2].UTC_Time
+    data[0].utcTime !== data[1].utcTime ||
+    data[0].utcTime !== data[2].utcTime
   ) {
     throw new Error('Different UTC_Time for transaction. Check export data.')
   }
@@ -81,10 +138,10 @@ async function createTransactionCreateInput(
     data,
     'Transaction Related',
   )
-  transactionRelatedRecord.Change = Math.abs(transactionRelatedRecord.Change)
+  transactionRelatedRecord.change = Math.abs(transactionRelatedRecord.change)
   const feeRecord = getRecordByOperation(data, 'Fee')
-  feeRecord.Change = Math.abs(feeRecord.Change)
-  const time = moment.utc(buyRecord.UTC_Time).toDate()
+  feeRecord.change = Math.abs(feeRecord.change)
+  const time = moment.utc(buyRecord.utcTime).toDate()
   const expensesInFiat = await calucateExpensesInFiat(
     transactionRelatedRecord,
     feeRecord,
@@ -94,10 +151,10 @@ async function createTransactionCreateInput(
   )
   const cryptoCoinInWallet: PrismaTypes.Prisma.CryptoCoinInWalletCreateNestedOneWithoutEarnInput = {
     create: {
-      amount: buyRecord.Change,
-      amountCoin: buyRecord.Coin,
+      amount: buyRecord.change,
+      amountCoin: buyRecord.coin,
       expensesInFiat: expensesInFiat,
-      remainAmount: buyRecord.Change,
+      remainAmount: buyRecord.change,
       time: time,
       portpholio: {
         connect: {
@@ -109,12 +166,12 @@ async function createTransactionCreateInput(
 
   const transactionObj: PrismaTypes.Prisma.TransactionCreateWithoutExportInput = {
     time: time,
-    buy: buyRecord.Change,
-    buyCoin: buyRecord.Coin,
-    price: transactionRelatedRecord.Change,
-    priceCoin: transactionRelatedRecord.Coin,
-    fee: feeRecord.Change,
-    feeCoin: feeRecord.Coin,
+    buy: buyRecord.change,
+    buyCoin: buyRecord.coin,
+    price: transactionRelatedRecord.change,
+    priceCoin: transactionRelatedRecord.coin,
+    fee: feeRecord.change,
+    feeCoin: feeRecord.coin,
     cryptoCoinInWallet: cryptoCoinInWallet,
   }
 
@@ -127,28 +184,30 @@ async function calucateExpensesInFiat(
   portpholio: PrismaTypes.Portpholio,
   time: Date,
   prisma: PrismaTypes.PrismaClient,
-): Promise<number> {
+): Promise<Decimal> {
   const transactionRelatedPriceInFiat =
-    transactionRelatedRecord.Coin === portpholio.fiat
-      ? transactionRelatedRecord.Change
-      : transactionRelatedRecord.Change *
-        (await getPricePerCoinInFiat(
-          transactionRelatedRecord.Coin,
-          portpholio.fiat,
-          time,
-          prisma,
-        ))
+    transactionRelatedRecord.coin === portpholio.fiat
+      ? new Decimal(transactionRelatedRecord.change)
+      : (
+          await getPricePerCoinInFiat(
+            transactionRelatedRecord.coin,
+            portpholio.fiat,
+            time,
+            prisma,
+          )
+        ).mul(transactionRelatedRecord.change)
   const feePriceInFiat =
-    feeRecord.Coin === portpholio.fiat
-      ? feeRecord.Change
-      : feeRecord.Change *
-        (await getPricePerCoinInFiat(
-          feeRecord.Coin,
-          portpholio.fiat,
-          time,
-          prisma,
-        ))
-  return transactionRelatedPriceInFiat + feePriceInFiat
+    feeRecord.coin === portpholio.fiat
+      ? new Decimal(feeRecord.change)
+      : (
+          await getPricePerCoinInFiat(
+            feeRecord.coin,
+            portpholio.fiat,
+            time,
+            prisma,
+          )
+        ).mul(feeRecord.change)
+  return transactionRelatedPriceInFiat.plus(feePriceInFiat).toDecimalPlaces(8)
 }
 
 function getRecordByOperation(
@@ -156,7 +215,7 @@ function getRecordByOperation(
   operation: string,
 ): NexusTypes.NexusGenInputs['ProcessExportInput'] {
   const record = data.filter((record) => {
-    return record.Operation === operation
+    return record.operation === operation
   })
   if (record.length !== 1) {
     console.log(record)
@@ -178,16 +237,17 @@ async function createEarnCreateInput(
   portpholio: PrismaTypes.Portpholio,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<PrismaTypes.Prisma.EarnCreateWithoutExportInput> {
-  const time = moment.utc(data.UTC_Time).toDate()
-  const amount = data.Change
-  const amountCoin = data.Coin
+  const time = moment.utc(data.utcTime).toDate()
+  const amount = data.change
+  const amountCoin = data.coin
   const pricePerCoinInFiat = await getPricePerCoinInFiat(
     amountCoin,
     portpholio.fiat,
     time,
     prisma,
   )
-  const priceInFiat = pricePerCoinInFiat * data.Change
+
+  const priceInFiat = pricePerCoinInFiat.mul(data.change).toDecimalPlaces(8)
   const earnTaxEvent: PrismaTypes.Prisma.EarnTaxEventCreateNestedOneWithoutEarnInput = {
     create: {
       gainInFiat: priceInFiat,
@@ -228,9 +288,9 @@ function createDepositCreateInput(
   data: NexusTypes.NexusGenInputs['ProcessExportInput'],
 ): PrismaTypes.Prisma.DepositCreateWithoutExportInput {
   const depositObj: PrismaTypes.Prisma.DepositCreateWithoutExportInput = {
-    amount: data.Change,
-    amountCoin: data.Coin,
-    time: moment.utc(data.UTC_Time).toDate(),
+    amount: data.change,
+    amountCoin: data.coin,
+    time: moment.utc(data.utcTime).toDate(),
   }
 
   return depositObj
@@ -245,9 +305,9 @@ function createWithdrawCreateInput(
   data: NexusTypes.NexusGenInputs['ProcessExportInput'],
 ): PrismaTypes.Prisma.WithdrawCreateWithoutExportInput {
   const depositObj: PrismaTypes.Prisma.WithdrawCreateWithoutExportInput = {
-    amount: data.Change,
-    amountCoin: data.Coin,
-    time: moment.utc(data.UTC_Time).toDate(),
+    amount: data.change,
+    amountCoin: data.coin,
+    time: moment.utc(data.utcTime).toDate(),
   }
 
   return depositObj

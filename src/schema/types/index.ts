@@ -1,4 +1,4 @@
-import { BigIntResolver, DateTimeResolver, Res } from 'graphql-scalars'
+import { BigIntResolver, DateTimeResolver } from 'graphql-scalars'
 
 import { asNexusMethod } from 'nexus'
 
@@ -23,3 +23,4 @@ export * as Withdraw from './withdraw'
 // enum
 export * as FiatEnum from './enum/fiatEnum'
 export * as TaxMethodEnum from './enum/taxMethodEnum'
+export * as TransactionTaxEventType from './enum/transactionTaxEventType'
