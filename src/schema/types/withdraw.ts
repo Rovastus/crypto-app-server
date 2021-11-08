@@ -1,12 +1,12 @@
 import { objectType, queryField } from 'nexus'
 
-export const Deposit = objectType({
+export const Withdraw = objectType({
   name: 'Withdraw',
   definition(t) {
     t.model.id()
     t.model.time()
     t.model.amount()
-    t.model.amountCoin()
+    t.model.coin()
     t.model.exportId()
     t.model.export()
   },

@@ -14,7 +14,7 @@ export const Portpholio = objectType({
     t.model.taxMethod()
     t.model.fiat()
     t.model.exports()
-    t.model.cryptoCoinInWallet()
+    t.model.wallet()
   },
 })
 

@@ -6,7 +6,7 @@ export const Deposit = objectType({
     t.model.id()
     t.model.time()
     t.model.amount()
-    t.model.amountCoin()
+    t.model.coin()
     t.model.exportId()
     t.model.export()
   },

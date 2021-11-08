@@ -8,12 +8,13 @@ datasource db {
 }
 
 model Portpholio {
-  id                 BigInt               @id @default(autoincrement()) @db.BigInt
-  name               String               @unique
-  taxMethod          TaxMethod
-  fiat               Fiat
-  exports            Export[]
-  cryptoCoinInWallet CryptoCoinInWallet[]
+  id            BigInt          @id @default(autoincrement()) @db.BigInt
+  name          String          @unique
+  taxMethod     TaxMethod
+  fiat          Fiat
+  exports       Export[]
+  wallet        Wallet[]
+  walletHistory WalletHistory[]
 }
 
 model Export {
@@ -28,91 +29,80 @@ model Export {
   withdraw     Withdraw[]
 }
 
-model CryptoCoinInWallet {
-  id                        BigInt                      @id @default(autoincrement()) @db.BigInt
-  time                      DateTime
-  amount                    Decimal                     @db.Decimal(65, 8)
-  amountCoin                String
-  remainAmount              Decimal                     @db.Decimal(65, 8)
-  expensesInFiat            Decimal                     @db.Decimal(65, 8)
-  portpholioId              BigInt
-  portpholio                Portpholio                  @relation(fields: [portpholioId], references: [id])
-  earn                      Earn?
-  transaction               Transaction?
-  transactionExpensesDetail TransactionExpensesDetail[]
+model Wallet {
+  id              BigInt     @id @default(autoincrement()) @db.BigInt
+  coin            String
+  amount          Decimal    @db.Decimal(65, 8)
+  avcoFiatPerUnit Decimal    @db.Decimal(65, 8)
+  totalFiat       Decimal    @db.Decimal(65, 8)
+  portpholioId    BigInt
+  portpholio      Portpholio @relation(fields: [portpholioId], references: [id])
+
+  @@unique([portpholioId, coin], name: "portpholioId_coin_unique")
+}
+
+model WalletHistory {
+  id                 BigInt     @id @default(autoincrement()) @db.BigInt
+  coin               String
+  oldAmount          Decimal    @db.Decimal(65, 8)
+  oldAvcoFiatPerUnit Decimal    @db.Decimal(65, 8)
+  oldTotalFiat       Decimal    @db.Decimal(65, 8)
+  newAmount          Decimal    @db.Decimal(65, 8)
+  newAvcoFiatPerUnit Decimal    @db.Decimal(65, 8)
+  newTotalFiat       Decimal    @db.Decimal(65, 8)
+  time               DateTime
+  portpholioId       BigInt
+  portpholio         Portpholio @relation(fields: [portpholioId], references: [id])
 }
 
 model Deposit {
-  id         BigInt   @id @default(autoincrement()) @db.BigInt
-  time       DateTime
-  amount     Decimal  @db.Decimal(65, 8)
-  amountCoin String
-  exportId   BigInt
-  export     Export   @relation(fields: [exportId], references: [id])
+  id       BigInt   @id @default(autoincrement()) @db.BigInt
+  amount   Decimal  @db.Decimal(65, 8)
+  coin     String
+  time     DateTime
+  exportId BigInt
+  export   Export   @relation(fields: [exportId], references: [id])
 }
 
 model Withdraw {
-  id         BigInt   @id @default(autoincrement()) @db.BigInt
-  time       DateTime
-  amount     Decimal  @db.Decimal(65, 8)
-  amountCoin String
-  exportId   BigInt
-  export     Export   @relation(fields: [exportId], references: [id])
+  id       BigInt   @id @default(autoincrement()) @db.BigInt
+  time     DateTime
+  amount   Decimal  @db.Decimal(65, 8)
+  coin     String
+  exportId BigInt
+  export   Export   @relation(fields: [exportId], references: [id])
 }
 
 model Transaction {
-  id                   BigInt                @id @default(autoincrement()) @db.BigInt
-  time                 DateTime
-  buy                  Decimal               @db.Decimal(65, 8)
-  buyCoin              String
-  price                Decimal               @db.Decimal(65, 8)
-  priceCoin            String
-  fee                  Decimal               @db.Decimal(65, 8)
-  feeCoin              String
-  exportId             BigInt
-  export               Export                @relation(fields: [exportId], references: [id])
-  cryptoCoinInWalletId BigInt
-  cryptoCoinInWallet   CryptoCoinInWallet    @relation(fields: [cryptoCoinInWalletId], references: [id])
-  transactionTaxEvent  TransactionTaxEvent[]
+  id                  BigInt                @id @default(autoincrement()) @db.BigInt
+  buy                 Decimal               @db.Decimal(65, 8)
+  buyCoin             String
+  price               Decimal               @db.Decimal(65, 8)
+  priceCoin           String
+  fee                 Decimal               @db.Decimal(65, 8)
+  feeCoin             String
+  time                DateTime
+  exportId            BigInt
+  export              Export                @relation(fields: [exportId], references: [id])
+  transactionTaxEvent TransactionTaxEvent[]
 }
 
 model TransactionTaxEvent {
-  id                        BigInt                      @id @default(autoincrement()) @db.BigInt
-  type                      TransactionTaxEventType
-  gainInFiat                Decimal                     @db.Decimal(65, 8)
-  expensesInFiat            Decimal                     @db.Decimal(65, 8)
-  transactionId             BigInt
-  transaction               Transaction                 @relation(fields: [transactionId], references: [id])
-  transactionExpensesDetail TransactionExpensesDetail[]
-}
-
-model TransactionExpensesDetail {
-  id                    BigInt              @id @default(autoincrement()) @db.BigInt
-  amount                Decimal             @db.Decimal(65, 8)
-  expensesInFiat        Decimal             @db.Decimal(65, 8)
-  cryptoCoinInWalletId  BigInt
-  cryptoCoinInWallet    CryptoCoinInWallet  @relation(fields: [cryptoCoinInWalletId], references: [id])
-  transactionTaxEventId BigInt
-  transactionTaxEvent   TransactionTaxEvent @relation(fields: [transactionTaxEventId], references: [id])
+  id             BigInt                  @id @default(autoincrement()) @db.BigInt
+  type           TransactionTaxEventType
+  gainInFiat     Decimal                 @db.Decimal(65, 8)
+  expensesInFiat Decimal                 @db.Decimal(65, 8)
+  transactionId  BigInt
+  transaction    Transaction             @relation(fields: [transactionId], references: [id])
 }
 
 model Earn {
-  id                   BigInt             @id @default(autoincrement()) @db.BigInt
-  time                 DateTime
-  amount               Decimal            @db.Decimal(65, 8)
-  amountCoin           String
-  exportId             BigInt
-  export               Export             @relation(fields: [exportId], references: [id])
-  earnTaxEventId       BigInt
-  earnTaxEvent         EarnTaxEvent       @relation(fields: [earnTaxEventId], references: [id])
-  cryptoCoinInWalletId BigInt
-  cryptoCoinInWallet   CryptoCoinInWallet @relation(fields: [cryptoCoinInWalletId], references: [id])
-}
-
-model EarnTaxEvent {
-  id         BigInt  @id @default(autoincrement()) @db.BigInt
-  gainInFiat Decimal @db.Decimal(65, 8)
-  earn       Earn?
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  amount     Decimal  @db.Decimal(65, 8)
+  amountCoin String
+  time       DateTime
+  exportId   BigInt
+  export     Export   @relation(fields: [exportId], references: [id])
 }
 
 model CoinPairPriceHistory {
@@ -133,7 +123,6 @@ model CoinPair {
 }
 
 enum TaxMethod {
-  FIFO
   AVCO
 }
 

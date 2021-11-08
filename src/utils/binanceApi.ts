@@ -1,9 +1,6 @@
 import * as axios from 'axios'
 import * as PrismaTypes from '.prisma/client'
 import { Decimal } from '@prisma/client/runtime'
-import { CoinPair } from '../schema/types/coinPair'
-import { time } from 'faker'
-import { assertWrappingType } from 'graphql'
 
 export const getBinanceCoinPairs = async function getBinanceCoinPairs(): Promise<
   Array<PrismaTypes.Prisma.CoinPairCreateInput>
@@ -23,7 +20,7 @@ export const getBinanceCoinPairs = async function getBinanceCoinPairs(): Promise
 
 export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   fromCoin: string,
-  toFiat: string,
+  toFiat: PrismaTypes.Fiat,
   time: Date,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<Decimal> {
@@ -125,7 +122,7 @@ async function getCoinPriceFromBinanceApi(
 }
 
 async function getBethPrice(
-  toFiat: string,
+  toFiat: PrismaTypes.Fiat,
   time: Date,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<Decimal> {

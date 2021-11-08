@@ -13,8 +13,6 @@ export const Transaction = objectType({
     t.model.feeCoin()
     t.model.exportId()
     t.model.export()
-    t.model.cryptoCoinInWalletId()
-    t.model.cryptoCoinInWallet()
     t.model.transactionTaxEvent()
   },
 })

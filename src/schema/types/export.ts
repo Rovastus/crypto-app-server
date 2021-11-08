@@ -8,10 +8,12 @@ import {
   stringArg,
 } from 'nexus'
 
+import * as moment from 'moment'
 import * as PrismaTypes from '.prisma/client'
-import { getPortpholioById } from '../../utils/portpholioUtils'
-import { processExportData } from '../../utils/exportUtils'
-import { calculateTaxesForTransactions } from '../../utils/taxUtils'
+import { getPortpholioById } from '../../utils/db/portpholioUtils'
+import { getWalletRecordsByPortpholioId } from '../../utils/db/walletUtils'
+import { ExportData, processExportData } from '../../utils/export/exportUtils'
+import { Decimal } from '@prisma/client/runtime'
 
 export const Export = objectType({
   name: 'Export',
@@ -56,57 +58,93 @@ export const Mutation = mutationField((t) => {
       ),
     },
     async resolve(_root, args, ctx) {
+      const exportData: Array<ExportData> = Array.from(
+        args.jsonData,
+        (data) => {
+          return {
+            coin: data.coin,
+            change: new Decimal(data.change),
+            operation: data.operation,
+            utcTime: moment.utc(data.utcTime).toDate(),
+          }
+        },
+      )
+
       const portpholio: PrismaTypes.Portpholio = await getPortpholioById(
         args.portpholioId,
         ctx.prisma,
       )
 
-      const processedData = await processExportData(
-        args.jsonData,
-        portpholio,
+      const walletRecords: Array<PrismaTypes.Wallet> = await getWalletRecordsByPortpholioId(
+        args.portpholioId,
         ctx.prisma,
       )
-      const exportCreateInput: PrismaTypes.Prisma.ExportCreateInput = {
-        portpholio: {
-          connect: {
-            id: args.portpholioId,
+
+      const data = await processExportData(
+        exportData,
+        walletRecords,
+        ctx.prisma,
+      )
+
+      const prismaPromises: PrismaTypes.PrismaPromise<any>[] = new Array()
+      prismaPromises.push(
+        ctx.prisma.export.create({
+          data: {
+            portpholio: {
+              connect: {
+                id: args.portpholioId,
+              },
+            },
+            name: args.name,
+            jsonData: JSON.stringify(args.jsonData),
+            earn: { create: data.earns },
+            transaction: { create: data.transactions },
+            withdraw: { create: data.withdraws },
+            deposit: { create: data.deposits },
           },
+        }),
+      )
+      const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortpholioInput> = Array.from(
+        data.wallet,
+        (obj) => {
+          return {
+            where: {
+              portpholioId_coin_unique: {
+                portpholioId: portpholio.id,
+                coin: obj.coin,
+              },
+            },
+            update: {
+              amount: obj.amount,
+              avcoFiatPerUnit: obj.avcoFiatPerUnit,
+              totalFiat: obj.totalFiat,
+            },
+            create: {
+              coin: obj.coin,
+              amount: obj.amount,
+              avcoFiatPerUnit: obj.avcoFiatPerUnit,
+              totalFiat: obj.totalFiat,
+            },
+          }
         },
-        name: args.name,
-        jsonData: JSON.stringify(args.jsonData),
-        earn: {
-          create: processedData.earns,
-        },
-        transaction: {
-          create: processedData.transactions,
-        },
-        withdraw: {
-          create: processedData.withdraws,
-        },
-        deposit: {
-          create: processedData.deposits,
-        },
-      }
+      )
+      prismaPromises.push(
+        ctx.prisma.portpholio.update({
+          where: {
+            id: portpholio.id,
+          },
+          data: {
+            wallet: {
+              upsert: [...walletUpsert],
+            },
+            walletHistory: {
+              create: [...data.walletHistory],
+            },
+          },
+        }),
+      )
 
-      const exportObj = await ctx.prisma.export.create({
-        data: exportCreateInput,
-      })
-
-      // calculate transaction taxes
-      const transactions = await ctx.prisma.transaction.findMany({
-        where: { exportId: exportObj.id },
-        orderBy: {
-          time: 'asc',
-        },
-      })
-
-      await calculateTaxesForTransactions(portpholio, transactions, ctx.prisma)
-
-      return await ctx.prisma.export.findUnique({
-        where: {
-          id: exportObj.id,
-        },
-      })
+      return await ctx.prisma.$transaction([...prismaPromises])[0]
     },
   })
 })
