@@ -1,7 +1,4 @@
 import * as PrismaTypes from '.prisma/client'
-import * as NexusTypes from 'nexus-typegen'
-import * as moment from 'moment'
-import { getPricePerCoinInFiat } from '../binanceApi'
 import { Decimal } from '@prisma/client/runtime'
 import {
   processEthStakingInterest,
@@ -45,16 +42,18 @@ export const processExportData = async function processExportData(
 
   for (let i = 0; i < exportData.length; i++) {
     switch (exportData[i].operation) {
-      case 'ETH 2.0 staking purchase':
-        await processEthStakingPurchase(
-          processedData.wallet,
-          processedData.walletHistory,
-          processedData.transactions,
-          exportData[i],
-          prisma,
-        )
+      case 'ETH 2.0 Staking':
+        if (exportData[i].coin === 'BETH') {
+          await processEthStakingPurchase(
+            processedData.wallet,
+            processedData.walletHistory,
+            processedData.transactions,
+            exportData[i],
+            prisma,
+          )
+        }
         break
-      case 'ETH 2.0 staking interest':
+      case 'ETH 2.0 Staking Rewards':
         processEthStakingInterest(
           processedData.wallet,
           processedData.walletHistory,

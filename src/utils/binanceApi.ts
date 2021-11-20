@@ -30,14 +30,16 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
 
   let symbol = await getSymbol(fromCoin + toFiat, prisma)
   if (symbol) {
-    // pair to fiat found
+    // pair to fiat found e.g (BTC/EUR)
     return await getCoinPriceFromBinanceApi(symbol, time, prisma)
   }
 
   symbol = await getSymbol(toFiat + fromCoin, prisma)
   if (symbol) {
-    // pair to fiat found
-    return await getCoinPriceFromBinanceApi(symbol, time, prisma)
+    // pair to fiat found e.g (EUR/USDT or EUR/BUSD)
+    const fiatPrice = await getCoinPriceFromBinanceApi(symbol, time, prisma)
+    // need to divide as we have pair EUR/USDT and not USDT/EUR
+    return new Decimal(1).div(fiatPrice).toDecimalPlaces(8)
   }
 
   // pair to fiat not found, calculate via USDT
@@ -64,7 +66,8 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
     prisma,
   )
 
-  return coinUSDTPrice.mul(fiatUSDTPrice).toDecimalPlaces(8)
+  // need to divide as we have pair EUR/USDT and not USDT/EUR
+  return coinUSDTPrice.div(fiatUSDTPrice).toDecimalPlaces(8)
 }
 
 async function getSymbol(

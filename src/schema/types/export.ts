@@ -33,6 +33,17 @@ export const Export = objectType({
 export const Query = queryField((t) => {
   t.crud.exports()
   t.crud.export()
+  t.field('exportsByPortpholioId', {
+    type: nonNull(list('Export')),
+    args: {
+      portpholioId: nonNull('BigInt'),
+    },
+    async resolve(_root, args, ctx) {
+      return await ctx.prisma.export.findMany({
+        where: { portpholioId: args.portpholioId },
+      })
+    },
+  })
 })
 
 export const Mutation = mutationField((t) => {

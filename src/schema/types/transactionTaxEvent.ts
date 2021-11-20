@@ -9,7 +9,6 @@ export const TransactionTaxEvent = objectType({
     t.model.expensesInFiat()
     t.model.transactionId()
     t.model.transaction()
-    t.model.transactionExpensesDetail()
   },
 })
 

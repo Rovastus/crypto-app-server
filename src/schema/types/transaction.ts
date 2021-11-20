@@ -1,4 +1,4 @@
-import { objectType, queryField } from 'nexus'
+import { list, nonNull, objectType, queryField } from 'nexus'
 
 export const Transaction = objectType({
   name: 'Transaction',
@@ -20,4 +20,22 @@ export const Transaction = objectType({
 export const Query = queryField((t) => {
   t.crud.transactions()
   t.crud.transaction()
+  t.field('transactionsByPortpholioId', {
+    type: nonNull(list('Transaction')),
+    args: {
+      portpholioId: nonNull('BigInt'),
+    },
+    async resolve(_root, args, ctx) {
+      const exportIds: Array<{
+        id: bigint
+      }> = await ctx.prisma.export.findMany({
+        select: { id: true },
+        where: { portpholioId: args.portpholioId },
+      })
+
+      return await ctx.prisma.transaction.findMany({
+        where: { exportId: { in: exportIds.map((id) => id.id) } },
+      })
+    },
+  })
 })
