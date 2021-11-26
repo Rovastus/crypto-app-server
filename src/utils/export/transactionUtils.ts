@@ -59,6 +59,22 @@ export const processTransaction = async function processTransaction(
     needToPayTax(
       buyRecord.coin,
       feeRecord.coin,
+      PrismaTypes.TransactionTaxEventType.FEE,
+    ) &&
+    feeWallet
+  ) {
+    await createTransactionFeeTaxEvent(
+      feeWallet,
+      transactionTaxEvents,
+      feeRecord,
+      prisma,
+    )
+  }
+
+  if (
+    needToPayTax(
+      buyRecord.coin,
+      feeRecord.coin,
       PrismaTypes.TransactionTaxEventType.BUY,
     ) &&
     priceWallet
@@ -68,21 +84,6 @@ export const processTransaction = async function processTransaction(
       transactionTaxEvents,
       buyRecord,
       transactionRelatedRecord,
-      feeRecord,
-      prisma,
-    )
-  }
-  if (
-    needToPayTax(
-      buyRecord.coin,
-      feeRecord.coin,
-      PrismaTypes.TransactionTaxEventType.FEE,
-    ) &&
-    feeWallet
-  ) {
-    await createTransactionFeeTaxEvent(
-      feeWallet,
-      transactionTaxEvents,
       feeRecord,
       prisma,
     )
@@ -205,6 +206,7 @@ async function createTransactionBuyTaxEvent(
   feeRecord: ExportData,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<void> {
+  // calculate gain
   let gainInFiat = new Decimal(0)
   if (isCoinFiat(buyRecord.coin)) {
     // Gain in fiat (e.g. EUR)
@@ -220,31 +222,30 @@ async function createTransactionBuyTaxEvent(
     gainInFiat = buyRecord.change.mul(fiatPricePerCoin).toDecimalPlaces(8)
   }
 
-  let expensesInFiat = new Decimal(0)
+  //calculate expense
+  let feeInFiat = new Decimal(0)
   if (isCoinFiat(feeRecord.coin)) {
-    // expenses buy (coin amount * wallet coin avcoFiatPerCoin) + Fee in fiat
-    expensesInFiat = transactionRelatedRecord.change
-      .mul(priceWallet.avcoFiatPerUnit)
-      .toDecimalPlaces(8)
-      .plus(feeRecord.change)
-      .toDecimalPlaces(8)
+    // fee is fiat
+    feeInFiat = feeRecord.change
+  } else if (transactionTaxEvents.length === 1) {
+    // price of fee can be used from transaction event
+    feeInFiat = new Decimal(transactionTaxEvents[0].gainInFiat)
   } else {
-    // expenses buy (coin amount * wallet coin avcoFiatPerCoin) + (Fee * curent fee price)
+    // calculate price of fee
     const fiatPricePerFeeCoin = await getPricePerCoinInFiat(
       feeRecord.coin,
       PrismaTypes.Fiat.EUR,
       feeRecord.utcTime,
       prisma,
     )
-    const totalFiatPriceFee = fiatPricePerFeeCoin
-      .mul(feeRecord.change)
-      .toDecimalPlaces(8)
-    expensesInFiat = transactionRelatedRecord.change
-      .mul(priceWallet.avcoFiatPerUnit)
-      .toDecimalPlaces(8)
-      .plus(totalFiatPriceFee)
-      .toDecimalPlaces(8)
+    feeInFiat = fiatPricePerFeeCoin.mul(feeRecord.change).toDecimalPlaces(8)
   }
+
+  let expensesInFiat = transactionRelatedRecord.change
+    .mul(priceWallet.avcoFiatPerUnit)
+    .toDecimalPlaces(8)
+    .plus(feeInFiat)
+    .toDecimalPlaces(8)
 
   transactionTaxEvents.push({
     type: PrismaTypes.TransactionTaxEventType.BUY,
