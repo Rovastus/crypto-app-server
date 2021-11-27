@@ -58,6 +58,7 @@ export const processTransaction = async function processTransaction(
   if (
     needToPayTax(
       buyRecord.coin,
+      transactionRelatedRecord.coin,
       feeRecord.coin,
       PrismaTypes.TransactionTaxEventType.FEE,
     ) &&
@@ -74,6 +75,7 @@ export const processTransaction = async function processTransaction(
   if (
     needToPayTax(
       buyRecord.coin,
+      transactionRelatedRecord.coin,
       feeRecord.coin,
       PrismaTypes.TransactionTaxEventType.BUY,
     ) &&
@@ -282,6 +284,7 @@ async function createTransactionFeeTaxEvent(
 
 function needToPayTax(
   coinBuy: string,
+  coinTransactionRelated: string,
   coinFee: string,
   type: PrismaTypes.TransactionTaxEventType,
 ): boolean {
@@ -290,7 +293,7 @@ function needToPayTax(
     return coinFee === BNB && coinBuy !== BNB
   }
 
-  if (coinBuy === PrismaTypes.Fiat.EUR) {
+  if (coinTransactionRelated === PrismaTypes.Fiat.EUR) {
     // not need to pay taxes (e.g. EUR -> BTC)
     return false
   }
