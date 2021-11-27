@@ -39,9 +39,16 @@ export const updateWalletRecordByTakingCoin = function updateWalletRecordByTakin
   record.amount = new Decimal(record.amount)
     .minus(amountToTake)
     .toDecimalPlaces(8)
-  record.totalFiat = new Decimal(record.totalFiat)
-    .minus(totalToTake)
-    .toDecimalPlaces(8)
+
+  // based of new amount value, update totalFiat and avcoFiatPerUnit
+  if (record.amount.greaterThan(0)) {
+    record.totalFiat = new Decimal(record.totalFiat)
+      .minus(totalToTake)
+      .toDecimalPlaces(8)
+  } else {
+    record.avcoFiatPerUnit = new Decimal(0)
+    record.totalFiat = new Decimal(0)
+  }
 
   // create WalletHistoryCreateWithoutPortpholioInput object
   return {
