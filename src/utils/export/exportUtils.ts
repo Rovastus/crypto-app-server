@@ -65,9 +65,12 @@ export const processExportData = async function processExportData(
       case 'Savings purchase':
       case 'POS savings redemption':
       case 'Savings Principal redemption':
+        // nothing to do for those operation
         break
       case 'POS savings interest':
       case 'Savings Interest':
+      case 'Commission Fee Shared With You':
+      case 'Commission History':
         processStakingInterest(
           processedData.wallet,
           processedData.walletHistory,
@@ -76,7 +79,6 @@ export const processExportData = async function processExportData(
         )
         break
       case 'Buy':
-      case 'Sell':
       case 'Transaction Related':
       case 'Fee':
         const transactionExportDataRecords = new Array<ExportData>()
@@ -88,6 +90,20 @@ export const processExportData = async function processExportData(
           processedData.walletHistory,
           processedData.transactions,
           transactionExportDataRecords,
+          prisma,
+        )
+        break
+      case 'Small assets exchange BNB':
+      case 'Large OTC trading':
+        const exchangeExportDataRecords = otcTradingExportDataToTransactionExportData(
+          exportData[i],
+          exportData[++i],
+        )
+        await processTransaction(
+          processedData.wallet,
+          processedData.walletHistory,
+          processedData.transactions,
+          exchangeExportDataRecords,
           prisma,
         )
         break
@@ -103,4 +119,37 @@ export const processExportData = async function processExportData(
   }
 
   return processedData
+}
+
+function otcTradingExportDataToTransactionExportData(
+  exportData1: ExportData,
+  exportData2: ExportData,
+): Array<ExportData> {
+  const exportDataRecords = new Array<ExportData>()
+  const feeExportData = {
+    change: new Decimal(0),
+    coin: '',
+    operation: 'Fee',
+    utcTime: exportData1.utcTime,
+  }
+
+  if (exportData1.change.greaterThan(0)) {
+    exportData1.operation = 'Buy'
+    feeExportData.coin = exportData1.coin
+  } else {
+    exportData1.operation = 'Transaction Related'
+  }
+
+  if (exportData2.change.greaterThan(0)) {
+    exportData2.operation = 'Buy'
+    feeExportData.coin = exportData2.coin
+  } else {
+    exportData2.operation = 'Transaction Related'
+  }
+
+  exportDataRecords.push(exportData1)
+  exportDataRecords.push(exportData2)
+  exportDataRecords.push(feeExportData)
+
+  return exportDataRecords
 }
