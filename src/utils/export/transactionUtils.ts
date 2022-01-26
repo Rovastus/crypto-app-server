@@ -173,7 +173,12 @@ function checkData(data: Array<ExportData>) {
     data[0].utcTime.getTime() !== data[1].utcTime.getTime() ||
     data[0].utcTime.getTime() !== data[2].utcTime.getTime()
   ) {
-    throw new Error('Different UTC_Time for transaction. Check export data.')
+    throw new Error(
+      `Different UTC_Time for transaction. Check export data. 
+      ${data[0].utcTime.getTime()}, 
+      ${data[1].utcTime.getTime()}, 
+      ${data[2].utcTime.getTime()}`,
+    )
   }
 }
 
@@ -187,7 +192,7 @@ function getRecordByOperation(
 
   // expecting only one record per operation
   if (records.length !== 1) {
-    console.log(records)
+    console.log(records, data)
     throw new Error(
       `${operation} operation missing or there are more than one record with that operation.`,
     )

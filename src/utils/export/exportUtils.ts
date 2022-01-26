@@ -71,6 +71,9 @@ export const processExportData = async function processExportData(
       case 'Savings Interest':
       case 'Commission Fee Shared With You':
       case 'Commission History':
+      case 'Referral Kickback':
+      case 'Distribution':
+      case 'Commission Rebate':
         processStakingInterest(
           processedData.wallet,
           processedData.walletHistory,

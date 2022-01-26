@@ -31,7 +31,13 @@ export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   let symbol = await getSymbol(fromCoin + toFiat, prisma)
   if (symbol) {
     // pair to fiat found e.g (BTC/EUR)
-    return await getCoinPriceFromBinanceApi(symbol, time, prisma)
+    try {
+      return await getCoinPriceFromBinanceApi(symbol, time, prisma)
+    } catch (error: any) {
+      if (!error.startsWith('Binance API call')) {
+        throw error
+      }
+    }
   }
 
   symbol = await getSymbol(toFiat + fromCoin, prisma)
@@ -115,6 +121,11 @@ async function getCoinPriceFromBinanceApi(
   const endTime = time.valueOf()
   const url = `https://www.binance.com/api/v3/klines?symbol=${symbol.pair}&interval=1m&startTime=${startTime}&endTime=${endTime}`
   const response = await axios.default.get(url)
+
+  if (response.data.length === 0) {
+    throw `Binance API call ${url} return empty data.`
+  }
+
   const price = new Decimal(response.data[0][4]).toDecimalPlaces(8)
 
   await prisma.coinPairPriceHistory.create({

@@ -24,3 +24,7 @@ yarn -s prisma migrate dev
 ```
 yarn && yarn dev
 ```
+
+### Database model
+
+![DB model](./docs/database.png)
