@@ -27,4 +27,4 @@ yarn && yarn dev
 
 ### Database model
 
-![DB model](./docs/database.png)
+![DB model](./docs/database.PNG)
