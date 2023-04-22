@@ -9,17 +9,16 @@ export const GQLBigInt = asNexusMethod(BigIntResolver, 'bigInt')
 // object
 export * as CoinPair from './coinPair'
 export * as CoinPairPriceHistory from './coinPairPriceHistory'
-export * as Deposit from './deposit'
+export * as CoinPairPriceHistoryKraken from './coinPairPriceHistoryKraken'
 export * as Earn from './earn'
-export * as Export from './export'
+export * as File from './file'
 export * as Portpholio from './portpholio'
 export * as Transaction from './transaction'
 export * as TransactionTaxEvent from './transactionTaxEvent'
 export * as Wallet from './wallet'
 export * as WalletHistory from './walletHistory'
-export * as Withdraw from './withdraw'
 
 // enum
 export * as FiatEnum from './enum/fiatEnum'
 export * as TaxMethodEnum from './enum/taxMethodEnum'
-export * as TransactionTaxEventType from './enum/transactionTaxEventType'
+export * as TransactionTaxEventTypeEnum from './enum/transactionTaxEventTypeEnum'

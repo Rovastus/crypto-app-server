@@ -11,8 +11,8 @@ export const Transaction = objectType({
     t.model.priceCoin()
     t.model.fee()
     t.model.feeCoin()
-    t.model.exportId()
-    t.model.export()
+    t.model.fileId()
+    t.model.file()
     t.model.transactionTaxEvent()
   },
 })

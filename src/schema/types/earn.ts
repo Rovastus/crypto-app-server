@@ -7,8 +7,8 @@ export const Earn = objectType({
     t.model.time()
     t.model.amount()
     t.model.amountCoin()
-    t.model.exportId()
-    t.model.export()
+    t.model.fileId()
+    t.model.file()
   },
 })
 
@@ -21,15 +21,15 @@ export const Query = queryField((t) => {
       portpholioId: nonNull('BigInt'),
     },
     async resolve(_root, args, ctx) {
-      const exportIds: Array<{
+      const fileIds: Array<{
         id: bigint
-      }> = await ctx.prisma.export.findMany({
+      }> = await ctx.prisma.file.findMany({
         select: { id: true },
         where: { portpholioId: args.portpholioId },
       })
 
       return await ctx.prisma.earn.findMany({
-        where: { exportId: { in: exportIds.map((id) => id.id) } },
+        where: { fileId: { in: fileIds.map((id) => id.id) } },
       })
     },
   })

@@ -2,21 +2,22 @@ import * as axios from 'axios'
 import * as PrismaTypes from '.prisma/client'
 import { Decimal } from '@prisma/client/runtime'
 
-export const getBinanceCoinPairs = async function getBinanceCoinPairs(): Promise<
-  Array<PrismaTypes.Prisma.CoinPairCreateInput>
-> {
-  const list: Array<PrismaTypes.Prisma.CoinPairCreateInput> = new Array()
-  const response = await axios.default.get(
-    'https://api.binance.com/api/v1/exchangeInfo',
-  )
-  response.data['symbols'].forEach((record) => {
-    const pair: PrismaTypes.Prisma.CoinPairCreateInput = {
-      pair: record['symbol'],
-    }
-    list.push(pair)
-  })
-  return list
-}
+export const getBinanceCoinPairs =
+  async function getBinanceCoinPairs(): Promise<
+    Array<PrismaTypes.Prisma.CoinPairCreateInput>
+  > {
+    const list: Array<PrismaTypes.Prisma.CoinPairCreateInput> = new Array()
+    const response = await axios.default.get(
+      'https://api.binance.com/api/v1/exchangeInfo',
+    )
+    response.data['symbols'].forEach((record) => {
+      const pair: PrismaTypes.Prisma.CoinPairCreateInput = {
+        pair: record['symbol'],
+      }
+      list.push(pair)
+    })
+    return list
+  }
 
 export const getPricePerCoinInFiat = async function getPricePerCoinInFiat(
   fromCoin: string,
@@ -80,9 +81,8 @@ async function getSymbol(
   symbol: string,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<PrismaTypes.CoinPair | null> {
-  const coinPair: PrismaTypes.CoinPair | null = await prisma.coinPair.findUnique(
-    { where: { pair: symbol } },
-  )
+  const coinPair: PrismaTypes.CoinPair | null =
+    await prisma.coinPair.findUnique({ where: { pair: symbol } })
   return coinPair
 }
 

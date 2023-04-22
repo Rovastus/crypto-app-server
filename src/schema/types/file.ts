@@ -15,31 +15,29 @@ import { getWalletRecordsByPortpholioId } from '../../utils/db/walletUtils'
 import { ExportData, processExportData } from '../../utils/export/exportUtils'
 import { Decimal } from '@prisma/client/runtime'
 
-export const Export = objectType({
-  name: 'Export',
+export const File = objectType({
+  name: 'File',
   definition(t) {
     t.model.id()
     t.model.name()
     t.model.jsonData()
     t.model.portpholioId()
     t.model.portpholio()
-    t.model.deposit()
     t.model.earn()
     t.model.transaction()
-    t.model.withdraw()
   },
 })
 
 export const Query = queryField((t) => {
-  t.crud.exports()
-  t.crud.export()
-  t.field('exportsByPortpholioId', {
-    type: nonNull(list('Export')),
+  t.crud.files()
+  t.crud.file()
+  t.field('filesByPortpholioId', {
+    type: nonNull(list('File')),
     args: {
       portpholioId: nonNull('BigInt'),
     },
     async resolve(_root, args, ctx) {
-      return await ctx.prisma.export.findMany({
+      return await ctx.prisma.file.findMany({
         where: { portpholioId: args.portpholioId },
       })
     },
@@ -47,8 +45,8 @@ export const Query = queryField((t) => {
 })
 
 export const Mutation = mutationField((t) => {
-  t.field('importExport', {
-    type: 'Export',
+  t.field('importFile', {
+    type: 'File',
     args: {
       portpholioId: nonNull('BigInt'),
       name: nonNull(stringArg()),
@@ -56,7 +54,7 @@ export const Mutation = mutationField((t) => {
         list(
           nonNull(
             inputObjectType({
-              name: 'ProcessExportInput',
+              name: 'ProcessFileInput',
               definition(t) {
                 t.nonNull.string('utcTime')
                 t.nonNull.string('operation')
@@ -86,10 +84,8 @@ export const Mutation = mutationField((t) => {
         ctx.prisma,
       )
 
-      const walletRecords: Array<PrismaTypes.Wallet> = await getWalletRecordsByPortpholioId(
-        args.portpholioId,
-        ctx.prisma,
-      )
+      const walletRecords: Array<PrismaTypes.Wallet> =
+        await getWalletRecordsByPortpholioId(args.portpholioId, ctx.prisma)
 
       const data = await processExportData(
         exportData,
@@ -99,7 +95,7 @@ export const Mutation = mutationField((t) => {
 
       const prismaPromises: PrismaTypes.PrismaPromise<any>[] = new Array()
       prismaPromises.push(
-        ctx.prisma.export.create({
+        ctx.prisma.file.create({
           data: {
             portpholio: {
               connect: {
@@ -110,14 +106,11 @@ export const Mutation = mutationField((t) => {
             jsonData: JSON.stringify(args.jsonData),
             earn: { create: data.earns },
             transaction: { create: data.transactions },
-            withdraw: { create: data.withdraws },
-            deposit: { create: data.deposits },
           },
         }),
       )
-      const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortpholioInput> = Array.from(
-        data.wallet,
-        (obj) => {
+      const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortpholioInput> =
+        Array.from(data.wallet, (obj) => {
           return {
             where: {
               portpholioId_coin_unique: {
@@ -137,8 +130,7 @@ export const Mutation = mutationField((t) => {
               totalFiat: obj.totalFiat,
             },
           }
-        },
-      )
+        })
       prismaPromises.push(
         ctx.prisma.portpholio.update({
           where: {

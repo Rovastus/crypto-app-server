@@ -13,7 +13,7 @@ export const Portpholio = objectType({
     t.model.name()
     t.model.taxMethod()
     t.model.fiat()
-    t.model.exports()
+    t.model.files()
     t.model.wallet()
   },
 })

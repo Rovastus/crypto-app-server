@@ -5,7 +5,6 @@ import {
   processEthStakingPurchase,
 } from './stakingEthUtils'
 import { processStakingInterest } from './stakingUtils'
-import { processDeposit } from './depositUtils'
 import { processWithdraw } from './withdrawUtils'
 import { processTransaction } from './transactionUtils'
 
@@ -30,14 +29,17 @@ export const processExportData = async function processExportData(
 }> {
   const processedData = {
     earns: new Array<PrismaTypes.Prisma.EarnCreateWithoutExportInput>(),
-    transactions: new Array<PrismaTypes.Prisma.TransactionCreateWithoutExportInput>(),
+    transactions:
+      new Array<PrismaTypes.Prisma.TransactionCreateWithoutExportInput>(),
     withdraws: new Array<PrismaTypes.Prisma.WithdrawCreateWithoutExportInput>(),
     deposits: new Array<PrismaTypes.Prisma.DepositCreateWithoutExportInput>(),
     wallet: Array.from(wallet, (obj) => {
-      const walletCreateWithoutPortpholioInput: PrismaTypes.Prisma.WalletCreateWithoutPortpholioInput = obj
+      const walletCreateWithoutPortpholioInput: PrismaTypes.Prisma.WalletCreateWithoutPortpholioInput =
+        obj
       return walletCreateWithoutPortpholioInput
     }),
-    walletHistory: new Array<PrismaTypes.Prisma.WalletHistoryCreateWithoutPortpholioInput>(),
+    walletHistory:
+      new Array<PrismaTypes.Prisma.WalletHistoryCreateWithoutPortpholioInput>(),
   }
 
   for (let i = 0; i < exportData.length; i++) {
@@ -98,10 +100,11 @@ export const processExportData = async function processExportData(
         break
       case 'Small assets exchange BNB':
       case 'Large OTC trading':
-        const exchangeExportDataRecords = otcTradingExportDataToTransactionExportData(
-          exportData[i],
-          exportData[++i],
-        )
+        const exchangeExportDataRecords =
+          otcTradingExportDataToTransactionExportData(
+            exportData[i],
+            exportData[++i],
+          )
         await processTransaction(
           processedData.wallet,
           processedData.walletHistory,

@@ -1,4 +1,4 @@
-import { objectType, queryField, mutationField } from 'nexus'
+import { objectType, queryField } from 'nexus'
 
 export const CoinPairPriceHistory = objectType({
   name: 'CoinPairPriceHistory',
@@ -13,6 +13,6 @@ export const CoinPairPriceHistory = objectType({
 })
 
 export const Query = queryField((t) => {
-  t.crud.coinPairs()
-  t.crud.coinPair()
+  t.crud.coinPairPriceHistories()
+  t.crud.coinPairPriceHistory()
 })

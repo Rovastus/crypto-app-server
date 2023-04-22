@@ -12,30 +12,28 @@ model Portpholio {
   name          String          @unique
   taxMethod     TaxMethod
   fiat          Fiat
-  exports       Export[]
+  files         File[]
   wallet        Wallet[]
   walletHistory WalletHistory[]
 }
 
-model Export {
+model File {
   id           BigInt        @id @default(autoincrement()) @db.BigInt
   name         String        @unique
   jsonData     String
   portpholioId BigInt
   portpholio   Portpholio    @relation(fields: [portpholioId], references: [id])
-  deposit      Deposit[]
   earn         Earn[]
   transaction  Transaction[]
   transfer     Transfer[]
-  withdraw     Withdraw[]
 }
 
 model Wallet {
   id              BigInt     @id @default(autoincrement()) @db.BigInt
   coin            String
-  amount          Decimal    @db.Decimal(65, 8)
-  avcoFiatPerUnit Decimal    @db.Decimal(65, 8)
-  totalFiat       Decimal    @db.Decimal(65, 8)
+  amount          Decimal    @db.Decimal(65, 20)
+  avcoFiatPerUnit Decimal    @db.Decimal(65, 20)
+  totalFiat       Decimal    @db.Decimal(65, 20)
   portpholioId    BigInt
   portpholio      Portpholio @relation(fields: [portpholioId], references: [id])
 
@@ -45,80 +43,70 @@ model Wallet {
 model WalletHistory {
   id                 BigInt     @id @default(autoincrement()) @db.BigInt
   coin               String
-  oldAmount          Decimal    @db.Decimal(65, 8)
-  oldAvcoFiatPerUnit Decimal    @db.Decimal(65, 8)
-  oldTotalFiat       Decimal    @db.Decimal(65, 8)
-  newAmount          Decimal    @db.Decimal(65, 8)
-  newAvcoFiatPerUnit Decimal    @db.Decimal(65, 8)
-  newTotalFiat       Decimal    @db.Decimal(65, 8)
+  oldAmount          Decimal    @db.Decimal(65, 20)
+  oldAvcoFiatPerUnit Decimal    @db.Decimal(65, 20)
+  oldTotalFiat       Decimal    @db.Decimal(65, 20)
+  newAmount          Decimal    @db.Decimal(65, 20)
+  newAvcoFiatPerUnit Decimal    @db.Decimal(65, 20)
+  newTotalFiat       Decimal    @db.Decimal(65, 20)
   time               DateTime
   portpholioId       BigInt
   portpholio         Portpholio @relation(fields: [portpholioId], references: [id])
 }
 
-model Deposit {
-  id       BigInt   @id @default(autoincrement()) @db.BigInt
-  amount   Decimal  @db.Decimal(65, 8)
-  coin     String
-  time     DateTime
-  exportId BigInt
-  export   Export   @relation(fields: [exportId], references: [id])
-}
-
-model Withdraw {
-  id       BigInt   @id @default(autoincrement()) @db.BigInt
-  time     DateTime
-  amount   Decimal  @db.Decimal(65, 8)
-  coin     String
-  exportId BigInt
-  export   Export   @relation(fields: [exportId], references: [id])
-}
-
 model Transaction {
   id                  BigInt                @id @default(autoincrement()) @db.BigInt
-  buy                 Decimal               @db.Decimal(65, 8)
+  buy                 Decimal               @db.Decimal(65, 20)
   buyCoin             String
-  price               Decimal               @db.Decimal(65, 8)
+  price               Decimal               @db.Decimal(65, 20)
   priceCoin           String
-  fee                 Decimal               @db.Decimal(65, 8)
+  fee                 Decimal               @db.Decimal(65, 20)
   feeCoin             String
   time                DateTime
-  exportId            BigInt
-  export              Export                @relation(fields: [exportId], references: [id])
+  fileId              BigInt
+  file                File                  @relation(fields: [fileId], references: [id])
   transactionTaxEvent TransactionTaxEvent[]
 }
 
 model TransactionTaxEvent {
   id             BigInt                  @id @default(autoincrement()) @db.BigInt
   type           TransactionTaxEventType
-  gainInFiat     Decimal                 @db.Decimal(65, 8)
-  expensesInFiat Decimal                 @db.Decimal(65, 8)
+  gainInFiat     Decimal                 @db.Decimal(65, 20)
+  expensesInFiat Decimal                 @db.Decimal(65, 20)
   transactionId  BigInt
   transaction    Transaction             @relation(fields: [transactionId], references: [id])
 }
 
 model Transfer {
-  id       BigInt   @id @default(autoincrement()) @db.BigInt
-  fee      Decimal  @db.Decimal(65, 8)
-  feeCoin  String
-  time     DateTime
-  exportId BigInt
-  export   Export   @relation(fields: [exportId], references: [id])
+  id      BigInt   @id @default(autoincrement()) @db.BigInt
+  fee     Decimal  @db.Decimal(65, 20)
+  feeCoin String
+  time    DateTime
+  fileId  BigInt
+  file    File     @relation(fields: [fileId], references: [id])
 }
 
 model Earn {
   id         BigInt   @id @default(autoincrement()) @db.BigInt
-  amount     Decimal  @db.Decimal(65, 8)
+  amount     Decimal  @db.Decimal(65, 20)
   amountCoin String
   time       DateTime
-  exportId   BigInt
-  export     Export   @relation(fields: [exportId], references: [id])
+  fileId     BigInt
+  file       File     @relation(fields: [fileId], references: [id])
+}
+
+model CoinPairPriceHistoryKraken {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  time       DateTime
+  openPrice  Decimal  @db.Decimal(65, 20)
+  closePrice Decimal  @db.Decimal(65, 20)
+  coinPair   String
 }
 
 model CoinPairPriceHistory {
   id         BigInt   @id @default(autoincrement()) @db.BigInt
   time       DateTime
-  price      Decimal  @db.Decimal(65, 8)
+  price      Decimal  @db.Decimal(65, 20)
   url        String
   coinPairId BigInt
   coinPair   CoinPair @relation(fields: [coinPairId], references: [id])
