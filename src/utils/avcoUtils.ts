@@ -1,4 +1,4 @@
-import { Decimal } from '@prisma/client/runtime'
+import { Decimal } from '@prisma/client/runtime/library'
 
 export const getAvcoValue = function getBinanceCoinPairs(
   weight1: Decimal,

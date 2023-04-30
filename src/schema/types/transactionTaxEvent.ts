@@ -1,18 +1,14 @@
-import { objectType, queryField } from 'nexus'
+import { TransactionTaxEventTypeEnum } from '@prisma/client';
+import { SchemaBuilderType } from '../schema';
 
-export const TransactionTaxEvent = objectType({
-  name: 'TransactionTaxEvent',
-  definition(t) {
-    t.model.id()
-    t.model.type()
-    t.model.gainInFiat()
-    t.model.expensesInFiat()
-    t.model.transactionId()
-    t.model.transaction()
-  },
-})
-
-export const Query = queryField((t) => {
-  t.crud.transactionTaxEvents()
-  t.crud.transactionTaxEvent()
-})
+export function initTransactionTaxEvent(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('TransactionTaxEvent', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			type: t.expose('type', { type: TransactionTaxEventTypeEnum }),
+			gainInFiat: t.expose('gainInFiat', { type: 'Decimal' }),
+			expensesInFiat: t.expose('expensesInFiat', { type: 'Decimal' }),
+			transaction: t.relation('transaction'),
+		}),
+	});
+}

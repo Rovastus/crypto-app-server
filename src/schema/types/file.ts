@@ -1,49 +1,58 @@
-import {
-  objectType,
-  queryField,
-  nonNull,
-  list,
-  inputObjectType,
-  mutationField,
-  stringArg,
-} from 'nexus'
+import { SchemaBuilderType } from '../schema';
+import { prisma } from '../db';
 
-import * as moment from 'moment'
-import * as PrismaTypes from '.prisma/client'
-import { getPortpholioById } from '../../utils/db/portpholioUtils'
-import { getWalletRecordsByPortpholioId } from '../../utils/db/walletUtils'
-import { ExportData, processExportData } from '../../utils/export/exportUtils'
-import { Decimal } from '@prisma/client/runtime'
+export function initFile(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('File', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			name: t.exposeString('name'),
+			jsonData: t.exposeString('jsonData'),
+			portpholioId: t.expose('portpholioId', { type: 'BigInt' }),
+			portpholio: t.relation('portpholio'),
+			earns: t.relation('earns'),
+			transactions: t.relation('transactions'),
+			transfers: t.relation('transfers'),
+		}),
+	});
 
-export const File = objectType({
-  name: 'File',
-  definition(t) {
-    t.model.id()
-    t.model.name()
-    t.model.jsonData()
-    t.model.portpholioId()
-    t.model.portpholio()
-    t.model.earn()
-    t.model.transaction()
-  },
-})
+	schemaBuilder.queryFields((t) => ({
+		filesByPortpholioId: t.prismaField({
+			type: ['File'],
+			args: {
+				portpholioId: t.arg({ type: 'BigInt', required: true }),
+			},
+			resolve: async (_query, _root, args, _context, _info) => {
+				return await prisma.file.findMany({
+					where: { portpholioId: args.portpholioId },
+				});
+			},
+		}),
+	}));
 
-export const Query = queryField((t) => {
-  t.crud.files()
-  t.crud.file()
-  t.field('filesByPortpholioId', {
-    type: nonNull(list('File')),
-    args: {
-      portpholioId: nonNull('BigInt'),
-    },
-    async resolve(_root, args, ctx) {
-      return await ctx.prisma.file.findMany({
-        where: { portpholioId: args.portpholioId },
-      })
-    },
-  })
-})
+	const FileJsonData = schemaBuilder.inputType('FileJsonData', {
+		fields: (t) => ({
+			name: t.string({ required: true }),
+			birthdate: t.string({ required: true }),
+			height: t.float({ required: true }),
+		}),
+	});
 
+	schemaBuilder.mutationFields((t) => ({
+		importFile: t.prismaField({
+			type: ['File'],
+			args: {
+				portpholioId: t.arg({ type: 'BigInt', required: true }),
+				name: t.arg.string({ required: true }),
+				jsonData: t.arg({ type: [FileJsonData], required: true }),
+			},
+			resolve: async (_query, _root, args, _context, _info) => {
+				return await prisma.file.findMany({ where: { portpholioId: args.portpholioId } });
+			},
+		}),
+	}));
+}
+
+/*
 export const Mutation = mutationField((t) => {
   t.field('importFile', {
     type: 'File',
@@ -151,3 +160,4 @@ export const Mutation = mutationField((t) => {
     },
   })
 })
+*/

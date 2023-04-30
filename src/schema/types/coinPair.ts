@@ -1,33 +1,26 @@
-import { objectType, queryField, mutationField, list } from 'nexus'
+import { SchemaBuilderType } from '../schema';
+import { getBinanceCoinPairs } from '../../utils/binanceApi';
+import { prisma } from '../db';
+import * as PrismaTypes from '.prisma/client';
 
-import * as PrismaTypes from '.prisma/client'
-import { getBinanceCoinPairs } from '../../utils/binanceApi'
+export function initCoinPair(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('CoinPair', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			pair: t.exposeString('pair'),
+			pairPriceHistories: t.relation('pairPriceHistories'),
+		}),
+	});
 
-export const CoinPair = objectType({
-  name: 'CoinPair',
-  definition(t) {
-    t.model.id()
-    t.model.pair()
-    t.model.pairPriceHistory()
-  },
-})
-
-export const Query = queryField((t) => {
-  t.crud.coinPairs()
-  t.crud.coinPair()
-})
-
-export const Mutation = mutationField((t) => {
-  t.field('initCoinPairs', {
-    type: list('CoinPair'),
-    args: {},
-    async resolve(_root, args, ctx) {
-      const coinPairs: Array<PrismaTypes.Prisma.CoinPairCreateInput> = await getBinanceCoinPairs()
-      await ctx.prisma.coinPair.deleteMany()
-      await ctx.prisma.coinPair.createMany({
-        data: [...coinPairs],
-      })
-      return ctx.prisma.coinPair.findMany()
-    },
-  })
-})
+	schemaBuilder.mutationFields((t) => ({
+		initCoinPairs: t.field({
+			type: 'String',
+			args: {},
+			resolve: async (_parent, _args, _context, _info) => {
+				const coinPairs: Array<PrismaTypes.Prisma.CoinPairCreateInput> = await getBinanceCoinPairs();
+				await prisma.coinPair.createMany({ data: coinPairs });
+				return 'Coin pairs was imported successfully.';
+			},
+		}),
+	}));
+}

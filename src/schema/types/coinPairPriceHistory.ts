@@ -1,18 +1,13 @@
-import { objectType, queryField } from 'nexus'
+import { SchemaBuilderType } from '../schema';
 
-export const CoinPairPriceHistory = objectType({
-  name: 'CoinPairPriceHistory',
-  definition(t) {
-    t.model.id()
-    t.model.time()
-    t.model.price()
-    t.model.url()
-    t.model.coinPairId()
-    t.model.coinPair()
-  },
-})
-
-export const Query = queryField((t) => {
-  t.crud.coinPairPriceHistories()
-  t.crud.coinPairPriceHistory()
-})
+export function initCoinPairPriceHistory(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('CoinPairPriceHistory', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			time: t.expose('time', { type: 'Date' }),
+			price: t.expose('price', { type: 'Decimal' }),
+			url: t.exposeString('url'),
+			coinPair: t.relation('coinPair'),
+		}),
+	});
+}

@@ -1,19 +1,15 @@
-import { objectType, queryField } from 'nexus'
+import { SchemaBuilderType } from '../schema';
 
-export const Wallet = objectType({
-  name: 'Wallet',
-  definition(t) {
-    t.model.id()
-    t.model.coin()
-    t.model.amount()
-    t.model.avcoFiatPerUnit()
-    t.model.totalFiat()
-    t.model.portpholioId()
-    t.model.portpholio()
-  },
-})
-
-export const Query = queryField((t) => {
-  t.crud.wallets()
-  t.crud.wallet()
-})
+export function initWallet(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('Wallet', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			coin: t.exposeString('coin'),
+			amount: t.expose('amount', { type: 'Decimal' }),
+			avcoFiatPerUnit: t.expose('avcoFiatPerUnit', { type: 'Decimal' }),
+			totalFiat: t.expose('totalFiat', { type: 'Decimal' }),
+			portpholioId: t.expose('portpholioId', { type: 'BigInt' }),
+			portpholio: t.relation('portpholio'),
+		}),
+	});
+}

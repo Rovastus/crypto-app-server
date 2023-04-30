@@ -1,20 +1,16 @@
-import express from 'express'
-import { ApolloServer } from 'apollo-server-express'
-import schema from './schema'
-import { createContext } from './context'
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { schemaBuilder } from './schema/schema';
+import { Decimal } from '@prisma/client/runtime/library';
 
-const PORT = 4000
+const startServer = async () => {
+	Decimal.set({ precision: 65, defaults: true });
 
-const app = express()
-app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
-const server = new ApolloServer({
-  schema,
-  context: createContext(),
-})
-server.applyMiddleware({ app, path: '/graphql' })
-app.listen(PORT, () => {
-  console.log(
-    `\n🚀      GraphQL is now running on http://localhost:${PORT}/graphql`,
-  )
-})
+	const server = new ApolloServer({ schema: schemaBuilder.toSchema() });
+
+	const { url } = await startStandaloneServer(server, { listen: { port: 4000 } });
+
+	console.log(`🚀 Server listening at: ${url}`);
+};
+
+startServer();

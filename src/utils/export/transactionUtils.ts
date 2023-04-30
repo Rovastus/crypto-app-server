@@ -1,5 +1,5 @@
 import * as PrismaTypes from '.prisma/client'
-import { Decimal } from '@prisma/client/runtime'
+import { Decimal } from '@prisma/client/runtime/library'
 import { FiatEnum } from '../../schema/types/enum/fiatEnum'
 import { getPricePerCoinInFiat } from '../binanceApi'
 import { ExportData } from './exportUtils'
@@ -54,7 +54,8 @@ export const processTransaction = async function processTransaction(
     feeWallet = getRecordFromWallet(wallet, feeRecord.coin)
   }
 
-  const transactionTaxEvents = new Array<PrismaTypes.Prisma.TransactionTaxEventCreateWithoutTransactionInput>()
+  const transactionTaxEvents =
+    new Array<PrismaTypes.Prisma.TransactionTaxEventCreateWithoutTransactionInput>()
   if (
     needToPayTax(
       buyRecord.coin,

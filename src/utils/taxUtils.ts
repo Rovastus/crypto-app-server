@@ -1,128 +1,131 @@
 import * as PrismaTypes from '.prisma/client'
-import { Decimal } from '@prisma/client/runtime'
+import { Decimal } from '@prisma/client/runtime/library'
 import { getPricePerCoinInFiat } from './binanceApi'
 
-export const calculateTaxesForTransactions = async function calculateTaxesForTransactions(
-  portpholio: PrismaTypes.Portpholio,
-  transactions: PrismaTypes.Transaction[],
-  prisma: PrismaTypes.PrismaClient,
-) {
-  const cryptoCoinInWalletList = await prisma.cryptoCoinInWallet.findMany({
-    where: {
-      AND: [
-        { portpholioId: portpholio.id },
-        {
-          NOT: {
-            remainAmount: 0.0,
+export const calculateTaxesForTransactions =
+  async function calculateTaxesForTransactions(
+    portpholio: PrismaTypes.Portpholio,
+    transactions: PrismaTypes.Transaction[],
+    prisma: PrismaTypes.PrismaClient,
+  ) {
+    const cryptoCoinInWalletList = await prisma.cryptoCoinInWallet.findMany({
+      where: {
+        AND: [
+          { portpholioId: portpholio.id },
+          {
+            NOT: {
+              remainAmount: 0.0,
+            },
           },
-        },
-      ],
-    },
-    orderBy: {
-      time: 'asc',
-    },
-  })
+        ],
+      },
+      orderBy: {
+        time: 'asc',
+      },
+    })
 
-  for (let i = 0; i < transactions.length; i++) {
-    const transaction = transactions[i]
-    console.log(transaction, i)
-    const needToPayTaxFromFee = needToPayTaxFromTransaction(
-      transaction,
-      portpholio,
-      PrismaTypes.TransactionTaxEventType.FEE,
-    )
-    const needToPayTaxFromBuy = needToPayTaxFromTransaction(
-      transaction,
-      portpholio,
-      PrismaTypes.TransactionTaxEventType.BUY,
-    )
-    if (needToPayTaxFromFee || needToPayTaxFromBuy) {
-      const prismaPromises: PrismaTypes.PrismaPromise<any>[] = new Array()
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i]
+      console.log(transaction, i)
+      const needToPayTaxFromFee = needToPayTaxFromTransaction(
+        transaction,
+        portpholio,
+        PrismaTypes.TransactionTaxEventType.FEE,
+      )
+      const needToPayTaxFromBuy = needToPayTaxFromTransaction(
+        transaction,
+        portpholio,
+        PrismaTypes.TransactionTaxEventType.BUY,
+      )
+      if (needToPayTaxFromFee || needToPayTaxFromBuy) {
+        const prismaPromises: PrismaTypes.PrismaPromise<any>[] = new Array()
 
-      // Fee
-      if (needToPayTaxFromFee) {
-        const expensesDetails = await calculateExpensesInFiat(
-          cryptoCoinInWalletList,
-          transaction,
-          PrismaTypes.TransactionTaxEventType.FEE,
-        )
-        console.log(expensesDetails)
-        const transactionTaxEvent: PrismaTypes.Prisma.TransactionTaxEventCreateInput = {
-          gainInFiat: await calculateTransactionGainInFiat(
+        // Fee
+        if (needToPayTaxFromFee) {
+          const expensesDetails = await calculateExpensesInFiat(
+            cryptoCoinInWalletList,
             transaction,
-            portpholio,
             PrismaTypes.TransactionTaxEventType.FEE,
-            prisma,
-          ),
-          type: PrismaTypes.TransactionTaxEventType.FEE,
-          expensesInFiat: expensesDetails.expensesInFiat,
-          transaction: { connect: { id: transaction.id } },
-          transactionExpensesDetail: {
-            create: expensesDetails.transactionExpensesDetails,
-          },
-        }
-        expensesDetails.cryptoCoinInWalletUpdated.forEach((record) => {
-          console.log(record.id, record.remainAmount)
-          prismaPromises.push(
-            prisma.cryptoCoinInWallet.update({
-              where: {
-                id: record.id,
-              },
-              data: {
-                remainAmount: record.remainAmount,
-              },
-            }),
           )
-        })
-        prismaPromises.push(
-          prisma.transactionTaxEvent.create({ data: transactionTaxEvent }),
-        )
-      }
+          console.log(expensesDetails)
+          const transactionTaxEvent: PrismaTypes.Prisma.TransactionTaxEventCreateInput =
+            {
+              gainInFiat: await calculateTransactionGainInFiat(
+                transaction,
+                portpholio,
+                PrismaTypes.TransactionTaxEventType.FEE,
+                prisma,
+              ),
+              type: PrismaTypes.TransactionTaxEventType.FEE,
+              expensesInFiat: expensesDetails.expensesInFiat,
+              transaction: { connect: { id: transaction.id } },
+              transactionExpensesDetail: {
+                create: expensesDetails.transactionExpensesDetails,
+              },
+            }
+          expensesDetails.cryptoCoinInWalletUpdated.forEach((record) => {
+            console.log(record.id, record.remainAmount)
+            prismaPromises.push(
+              prisma.cryptoCoinInWallet.update({
+                where: {
+                  id: record.id,
+                },
+                data: {
+                  remainAmount: record.remainAmount,
+                },
+              }),
+            )
+          })
+          prismaPromises.push(
+            prisma.transactionTaxEvent.create({ data: transactionTaxEvent }),
+          )
+        }
 
-      // Buy
-      if (needToPayTaxFromBuy) {
-        const expensesDetails = await calculateExpensesInFiat(
-          cryptoCoinInWalletList,
-          transaction,
-          PrismaTypes.TransactionTaxEventType.BUY,
-        )
-        console.log(expensesDetails)
-        const transactionTaxEvent: PrismaTypes.Prisma.TransactionTaxEventCreateInput = {
-          gainInFiat: await calculateTransactionGainInFiat(
+        // Buy
+        if (needToPayTaxFromBuy) {
+          const expensesDetails = await calculateExpensesInFiat(
+            cryptoCoinInWalletList,
             transaction,
-            portpholio,
             PrismaTypes.TransactionTaxEventType.BUY,
-            prisma,
-          ),
-          type: PrismaTypes.TransactionTaxEventType.BUY,
-          expensesInFiat: expensesDetails.expensesInFiat,
-          transaction: { connect: { id: transaction.id } },
-          transactionExpensesDetail: {
-            create: expensesDetails.transactionExpensesDetails,
-          },
-        }
-        expensesDetails.cryptoCoinInWalletUpdated.forEach((record) => {
-          console.log(record.id, record.remainAmount)
-          prismaPromises.push(
-            prisma.cryptoCoinInWallet.update({
-              where: {
-                id: record.id,
-              },
-              data: {
-                remainAmount: record.remainAmount,
-              },
-            }),
           )
-        })
-        prismaPromises.push(
-          prisma.transactionTaxEvent.create({ data: transactionTaxEvent }),
-        )
-      }
+          console.log(expensesDetails)
+          const transactionTaxEvent: PrismaTypes.Prisma.TransactionTaxEventCreateInput =
+            {
+              gainInFiat: await calculateTransactionGainInFiat(
+                transaction,
+                portpholio,
+                PrismaTypes.TransactionTaxEventType.BUY,
+                prisma,
+              ),
+              type: PrismaTypes.TransactionTaxEventType.BUY,
+              expensesInFiat: expensesDetails.expensesInFiat,
+              transaction: { connect: { id: transaction.id } },
+              transactionExpensesDetail: {
+                create: expensesDetails.transactionExpensesDetails,
+              },
+            }
+          expensesDetails.cryptoCoinInWalletUpdated.forEach((record) => {
+            console.log(record.id, record.remainAmount)
+            prismaPromises.push(
+              prisma.cryptoCoinInWallet.update({
+                where: {
+                  id: record.id,
+                },
+                data: {
+                  remainAmount: record.remainAmount,
+                },
+              }),
+            )
+          })
+          prismaPromises.push(
+            prisma.transactionTaxEvent.create({ data: transactionTaxEvent }),
+          )
+        }
 
-      await prisma.$transaction([...prismaPromises])
+        await prisma.$transaction([...prismaPromises])
+      }
     }
   }
-}
 
 function needToPayTaxFromTransaction(
   transaction: PrismaTypes.Transaction,
@@ -208,7 +211,8 @@ async function calculateExpensesInFiat(
       ? transaction.feeCoin
       : transaction.priceCoin
   let totalExpensesInFiat = new Decimal(0)
-  const transactionExpensesDetails: Array<PrismaTypes.Prisma.TransactionExpensesDetailCreateWithoutTransactionTaxEventInput> = new Array()
+  const transactionExpensesDetails: Array<PrismaTypes.Prisma.TransactionExpensesDetailCreateWithoutTransactionTaxEventInput> =
+    new Array()
   const cryptoCoinInWalletUpdatedList: Array<{
     id: bigint
     remainAmount: Decimal
@@ -255,9 +259,8 @@ async function calculateExpensesInFiat(
         cryptoCoinInWallet: { connect: { id: cryptoCoinInWalletList[i].id } },
         expensesInFiat: tmpExpensesInFiat,
       })
-      cryptoCoinInWalletList[i].remainAmount = cryptoCoinInWalletList[
-        i
-      ].remainAmount.minus(amount)
+      cryptoCoinInWalletList[i].remainAmount =
+        cryptoCoinInWalletList[i].remainAmount.minus(amount)
       cryptoCoinInWalletUpdatedList.push({
         id: cryptoCoinInWalletList[i].id,
         remainAmount: cryptoCoinInWalletList[i].remainAmount,

@@ -1,5 +1,5 @@
 import * as PrismaTypes from '.prisma/client'
-import { Decimal } from '@prisma/client/runtime'
+import { Decimal } from '@prisma/client/runtime/library'
 import {
   processEthStakingInterest,
   processEthStakingPurchase,

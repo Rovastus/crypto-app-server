@@ -1,17 +1,20 @@
 -- CreateEnum
-CREATE TYPE "TaxMethod" AS ENUM ('AVCO');
+CREATE TYPE "TaxMethodEnum" AS ENUM ('AVCO');
 
 -- CreateEnum
-CREATE TYPE "Fiat" AS ENUM ('EUR');
+CREATE TYPE "FiatEnum" AS ENUM ('EUR');
+
+-- CreateEnum
+CREATE TYPE "TransactionTaxEventTypeEnum" AS ENUM ('FEE', 'BUY');
 
 -- CreateTable
 CREATE TABLE "Portpholio" (
     "id" BIGSERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "taxMethod" "TaxMethod" NOT NULL,
-    "fiat" "Fiat" NOT NULL,
+    "taxMethod" "TaxMethodEnum" NOT NULL,
+    "fiat" "FiatEnum" NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "Portpholio_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -21,7 +24,7 @@ CREATE TABLE "File" (
     "jsonData" TEXT NOT NULL,
     "portpholioId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -33,7 +36,7 @@ CREATE TABLE "Wallet" (
     "totalFiat" DECIMAL(65,20) NOT NULL,
     "portpholioId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "Wallet_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -49,7 +52,7 @@ CREATE TABLE "WalletHistory" (
     "time" TIMESTAMP(3) NOT NULL,
     "portpholioId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "WalletHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -64,17 +67,18 @@ CREATE TABLE "Transaction" (
     "time" TIMESTAMP(3) NOT NULL,
     "fileId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TransactionTaxEvent" (
     "id" BIGSERIAL NOT NULL,
+    "type" "TransactionTaxEventTypeEnum" NOT NULL,
     "gainInFiat" DECIMAL(65,20) NOT NULL,
     "expensesInFiat" DECIMAL(65,20) NOT NULL,
     "transactionId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "TransactionTaxEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -85,7 +89,7 @@ CREATE TABLE "Transfer" (
     "time" TIMESTAMP(3) NOT NULL,
     "fileId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "Transfer_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -96,7 +100,7 @@ CREATE TABLE "Earn" (
     "time" TIMESTAMP(3) NOT NULL,
     "fileId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "Earn_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -107,7 +111,7 @@ CREATE TABLE "CoinPairPriceHistoryKraken" (
     "closePrice" DECIMAL(65,20) NOT NULL,
     "coinPair" TEXT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "CoinPairPriceHistoryKraken_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -118,7 +122,7 @@ CREATE TABLE "CoinPairPriceHistory" (
     "url" TEXT NOT NULL,
     "coinPairId" BIGINT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "CoinPairPriceHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -126,44 +130,44 @@ CREATE TABLE "CoinPair" (
     "id" BIGSERIAL NOT NULL,
     "pair" TEXT NOT NULL,
 
-    PRIMARY KEY ("id")
+    CONSTRAINT "CoinPair_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Portpholio.name_unique" ON "Portpholio"("name");
+CREATE UNIQUE INDEX "Portpholio_name_key" ON "Portpholio"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "File.name_unique" ON "File"("name");
+CREATE UNIQUE INDEX "File_name_key" ON "File"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "portpholioId_coin_unique" ON "Wallet"("portpholioId", "coin");
+CREATE UNIQUE INDEX "Wallet_portpholioId_coin_key" ON "Wallet"("portpholioId", "coin");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "time_coinPairId_unique" ON "CoinPairPriceHistory"("time", "coinPairId");
+CREATE UNIQUE INDEX "CoinPairPriceHistory_time_coinPairId_key" ON "CoinPairPriceHistory"("time", "coinPairId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CoinPair.pair_unique" ON "CoinPair"("pair");
+CREATE UNIQUE INDEX "CoinPair_pair_key" ON "CoinPair"("pair");
 
 -- AddForeignKey
-ALTER TABLE "File" ADD FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "File" ADD CONSTRAINT "File_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Wallet" ADD FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Wallet" ADD CONSTRAINT "Wallet_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "WalletHistory" ADD FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WalletHistory" ADD CONSTRAINT "WalletHistory_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Transaction" ADD FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "TransactionTaxEvent" ADD FOREIGN KEY ("transactionId") REFERENCES "Transaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TransactionTaxEvent" ADD CONSTRAINT "TransactionTaxEvent_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "Transaction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Transfer" ADD FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Transfer" ADD CONSTRAINT "Transfer_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Earn" ADD FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Earn" ADD CONSTRAINT "Earn_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CoinPairPriceHistory" ADD FOREIGN KEY ("coinPairId") REFERENCES "CoinPair"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CoinPairPriceHistory" ADD CONSTRAINT "CoinPairPriceHistory_coinPairId_fkey" FOREIGN KEY ("coinPairId") REFERENCES "CoinPair"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

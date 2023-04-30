@@ -1,5 +1,9 @@
-generator client {
+generator gen {
   provider = "prisma-client-js"
+}
+
+generator pothos {
+  provider = "prisma-pothos-types"
 }
 
 datasource db {
@@ -8,13 +12,13 @@ datasource db {
 }
 
 model Portpholio {
-  id            BigInt          @id @default(autoincrement()) @db.BigInt
-  name          String          @unique
-  taxMethod     TaxMethod
-  fiat          Fiat
-  files         File[]
-  wallet        Wallet[]
-  walletHistory WalletHistory[]
+  id              BigInt          @id @default(autoincrement()) @db.BigInt
+  name            String          @unique
+  taxMethod       TaxMethodEnum
+  fiat            FiatEnum
+  files           File[]
+  wallets         Wallet[]
+  walletHistories WalletHistory[]
 }
 
 model File {
@@ -23,9 +27,9 @@ model File {
   jsonData     String
   portpholioId BigInt
   portpholio   Portpholio    @relation(fields: [portpholioId], references: [id])
-  earn         Earn[]
-  transaction  Transaction[]
-  transfer     Transfer[]
+  earns        Earn[]
+  transactions Transaction[]
+  transfers    Transfer[]
 }
 
 model Wallet {
@@ -55,26 +59,26 @@ model WalletHistory {
 }
 
 model Transaction {
-  id                  BigInt                @id @default(autoincrement()) @db.BigInt
-  buy                 Decimal               @db.Decimal(65, 20)
-  buyCoin             String
-  price               Decimal               @db.Decimal(65, 20)
-  priceCoin           String
-  fee                 Decimal               @db.Decimal(65, 20)
-  feeCoin             String
-  time                DateTime
-  fileId              BigInt
-  file                File                  @relation(fields: [fileId], references: [id])
-  transactionTaxEvent TransactionTaxEvent[]
+  id                   BigInt                @id @default(autoincrement()) @db.BigInt
+  buy                  Decimal               @db.Decimal(65, 20)
+  buyCoin              String
+  price                Decimal               @db.Decimal(65, 20)
+  priceCoin            String
+  fee                  Decimal               @db.Decimal(65, 20)
+  feeCoin              String
+  time                 DateTime
+  fileId               BigInt
+  file                 File                  @relation(fields: [fileId], references: [id])
+  transactionTaxEvents TransactionTaxEvent[]
 }
 
 model TransactionTaxEvent {
-  id             BigInt                  @id @default(autoincrement()) @db.BigInt
-  type           TransactionTaxEventType
-  gainInFiat     Decimal                 @db.Decimal(65, 20)
-  expensesInFiat Decimal                 @db.Decimal(65, 20)
+  id             BigInt                      @id @default(autoincrement()) @db.BigInt
+  type           TransactionTaxEventTypeEnum
+  gainInFiat     Decimal                     @db.Decimal(65, 20)
+  expensesInFiat Decimal                     @db.Decimal(65, 20)
   transactionId  BigInt
-  transaction    Transaction             @relation(fields: [transactionId], references: [id])
+  transaction    Transaction                 @relation(fields: [transactionId], references: [id])
 }
 
 model Transfer {
@@ -115,20 +119,20 @@ model CoinPairPriceHistory {
 }
 
 model CoinPair {
-  id               BigInt                 @id @default(autoincrement()) @db.BigInt
-  pair             String                 @unique
-  pairPriceHistory CoinPairPriceHistory[]
+  id                 BigInt                 @id @default(autoincrement()) @db.BigInt
+  pair               String                 @unique
+  pairPriceHistories CoinPairPriceHistory[]
 }
 
-enum TaxMethod {
+enum TaxMethodEnum {
   AVCO
 }
 
-enum Fiat {
+enum FiatEnum {
   EUR
 }
 
-enum TransactionTaxEventType {
+enum TransactionTaxEventTypeEnum {
   FEE
   BUY
 }

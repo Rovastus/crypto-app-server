@@ -14,15 +14,14 @@ Password: cryptoPassword
 ### Generate prisma releted files
 
 ```
-yarn -s prisma generate
-yarn -s prisma migrate reset --preview-feature
-yarn -s prisma migrate dev
+npm run generate
+npm run migrate
 ```
 
 ### Run server
 
 ```
-yarn && yarn dev
+npm run dev
 ```
 
 ### Database model

@@ -1,74 +1,48 @@
-import {
-  objectType,
-  queryField,
-  nonNull,
-  list,
-  inputObjectType,
-  mutationField,
-  stringArg,
-} from 'nexus'
-import * as moment from 'moment'
-import * as PrismaTypes from '.prisma/client'
-import { Decimal } from '@prisma/client/runtime'
+import moment from 'moment';
+import { prisma } from '../db';
+import { SchemaBuilderType } from '../schema';
+import * as PrismaTypes from '.prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
-export const CoinPairPriceHistoryKraken = objectType({
-  name: 'CoinPairPriceHistoryKraken',
-  definition(t) {
-    t.model.id()
-    t.model.time()
-    t.model.openPrice()
-    t.model.closePrice()
-    t.model.coinPair()
-  },
-})
+export function initCoinPairPriceHistoryKraken(schemaBuilder: SchemaBuilderType) {
+	schemaBuilder.prismaObject('CoinPairPriceHistoryKraken', {
+		fields: (t) => ({
+			id: t.expose('id', { type: 'BigInt' }),
+			time: t.expose('time', { type: 'Date' }),
+			openPrice: t.expose('openPrice', { type: 'Decimal' }),
+			closePrice: t.expose('closePrice', { type: 'Decimal' }),
+			coinPair: t.exposeString('coinPair'),
+		}),
+	});
 
-export const Query = queryField((t) => {
-  t.crud.coinPairPriceHistoryKrakens()
-  t.crud.coinPairPriceHistoryKraken()
-})
+	const CoinPairPriceHistoryKrakenJsonData = schemaBuilder.inputType('CoinPairPriceHistoryKrakenJsonData', {
+		fields: (t) => ({
+			utcTimeUnix: t.int({ required: true }),
+			openPrice: t.string({ required: true }),
+			closePrice: t.string({ required: true }),
+		}),
+	});
 
-export const Mutation = mutationField((t) => {
-  t.field('importCoinPairPriceHistoryKrakenData', {
-    type: 'String',
-    args: {
-      coinPair: nonNull(stringArg()),
-      jsonData: nonNull(
-        list(
-          nonNull(
-            inputObjectType({
-              name: 'CoinPairPriceHistoryKrakenFileInput',
-              definition(t) {
-                t.nonNull.string('utcTime')
-                t.nonNull.string('openPrice')
-                t.nonNull.string('closePrice')
-              },
-            }),
-          ),
-        ),
-      ),
-    },
-    async resolve(_root, args, ctx) {
-      const exportData: Array<PrismaTypes.Prisma.CoinPairPriceHistoryKrakenCreateManyInput> =
-        Array.from(args.jsonData, (data: JsonDataRow) => {
-          return {
-            time: moment.utc(data.utcTime).toDate(),
-            openPrice: new Decimal(data.openPrice),
-            closePrice: new Decimal(data.closePrice),
-            coinPair: args.coinPair,
-          }
-        })
+	schemaBuilder.mutationFields((t) => ({
+		importCoinPairPriceHistoryKrakenData: t.field({
+			type: 'String',
+			args: {
+				coinPair: t.arg.string({ required: true }),
+				jsonData: t.arg({ type: [CoinPairPriceHistoryKrakenJsonData], required: true }),
+			},
+			resolve: async (_parent, args, _context, _info) => {
+				const importData: Array<PrismaTypes.Prisma.CoinPairPriceHistoryKrakenCreateManyInput> = Array.from(args.jsonData, (data) => {
+					return {
+						time: moment.unix(data.utcTimeUnix).toDate(),
+						openPrice: new Decimal(data.openPrice),
+						closePrice: new Decimal(data.closePrice),
+						coinPair: args.coinPair,
+					};
+				});
 
-      await ctx.prisma.coinPairPriceHistoryKraken.createMany({
-        data: exportData,
-      })
-
-      return 'File data was imported successfully.'
-    },
-  })
-})
-
-export interface JsonDataRow {
-  utcTime: string
-  openPrice: string
-  closePrice: string
+				await prisma.coinPairPriceHistoryKraken.createMany({ data: importData });
+				return 'File data was imported successfully.';
+			},
+		}),
+	}));
 }

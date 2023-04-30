@@ -1,6 +1,6 @@
 import * as axios from 'axios'
 import * as PrismaTypes from '.prisma/client'
-import { Decimal } from '@prisma/client/runtime'
+import { Decimal } from '@prisma/client/runtime/library'
 
 export const getBinanceCoinPairs =
   async function getBinanceCoinPairs(): Promise<
