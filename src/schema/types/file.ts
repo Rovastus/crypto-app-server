@@ -1,5 +1,17 @@
 import { SchemaBuilderType } from '../schema';
 import { prisma } from '../db';
+import * as PrismaTypes from '.prisma/client';
+import { getPortpholioById } from '../../utils/db/portpholioUtils';
+import { getWalletRecordsByPortpholioId } from '../../utils/db/walletUtils';
+import { processFileExport } from '../../utils/file/fileUtils';
+import moment from 'moment';
+
+export interface FileJsonDataI {
+	utcTime: Date;
+	operation: string;
+	description: string;
+	data: string;
+}
 
 export function initFile(schemaBuilder: SchemaBuilderType) {
 	schemaBuilder.prismaObject('File', {
@@ -31,9 +43,10 @@ export function initFile(schemaBuilder: SchemaBuilderType) {
 
 	const FileJsonData = schemaBuilder.inputType('FileJsonData', {
 		fields: (t) => ({
-			name: t.string({ required: true }),
-			birthdate: t.string({ required: true }),
-			height: t.float({ required: true }),
+			utcTime: t.string({ required: true }),
+			operation: t.string({ required: true }),
+			description: t.string({ required: true }),
+			data: t.string({ required: true }),
 		}),
 	});
 
@@ -46,6 +59,22 @@ export function initFile(schemaBuilder: SchemaBuilderType) {
 				jsonData: t.arg({ type: [FileJsonData], required: true }),
 			},
 			resolve: async (_query, _root, args, _context, _info) => {
+				const portpholio: PrismaTypes.Portpholio = await getPortpholioById(args.portpholioId, prisma);
+				const walletRecords: Array<PrismaTypes.Wallet> = await getWalletRecordsByPortpholioId(args.portpholioId, prisma);
+
+				const data = await processFileExport(
+					args.jsonData.map((obj) => {
+						return {
+							utcTime: moment(obj.utcTime).toDate(),
+							operation: obj.operation,
+							description: obj.description,
+							data: obj.data,
+						};
+					}),
+					walletRecords,
+					prisma,
+				);
+
 				return await prisma.file.findMany({ where: { portpholioId: args.portpholioId } });
 			},
 		}),

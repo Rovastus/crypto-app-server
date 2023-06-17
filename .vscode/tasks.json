@@ -3,13 +3,23 @@
 	"tasks": [
     {
       "type": "npm",
-      "script": "start",
+      "script": "generate",
       "problemMatcher": [],
       "label": "BE",
-      "detail": "yarn && yarn dev",
       "options": {
         "statusbar": {
-            "label": "BE start"
+            "label": "BE generate"
+        }
+      }
+    },
+    {
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "label": "BE",
+      "options": {
+        "statusbar": {
+            "label": "BE dev"
         }
       }
     }
