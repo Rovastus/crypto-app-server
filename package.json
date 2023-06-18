@@ -10,14 +10,14 @@
     "migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "@apollo/server": "4.7.1",
+    "@apollo/server": "4.7.2",
     "@pothos/core": "3.30.0",
-    "@pothos/plugin-prisma": "3.51.1",
+    "@pothos/plugin-prisma": "3.52.0",
     "@prisma/client": "4.15.0",
     "axios": "1.4.0",
     "express": "4.18.2",
     "graphql": "16.6.0",
-    "graphql-scalars": "1.22.1",
+    "graphql-scalars": "1.22.2",
     "json-bigint-patch": "0.0.8",
     "lodash": "4.17.21",
     "moment": "2.29.4",
@@ -26,7 +26,7 @@
   "devDependencies": {
     "@types/express": "4.17.17",
     "@types/lodash": "4.14.195",
-    "@types/ws": "8.5.4",
+    "@types/ws": "8.5.5",
     "prettier": "2.8.8",
     "prisma": "4.15.0",
     "ts-node": "10.9.1",
