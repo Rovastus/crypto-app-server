@@ -1,84 +1,84 @@
-import { SchemaBuilderType } from '../schema';
-import { prisma } from '../db';
 import * as PrismaTypes from '.prisma/client';
-import { getPortpholioById } from '../../utils/db/portpholioUtils';
-import { getWalletRecordsByPortpholioId } from '../../utils/db/walletUtils';
-import { processFileExport } from '../../utils/file/fileUtils';
 import moment from 'moment';
+import { getPortfolioById } from '../../utils/db/portfolioUtils';
+import { getWalletRecordsByPortfolioId } from '../../utils/db/walletUtils';
+import { processFileExport } from '../../utils/file/fileUtils';
+import { prisma } from '../db';
+import { SchemaBuilderType } from '../schema';
 
 export interface FileJsonDataI {
-	utcTime: Date;
-	operation: string;
-	description: string;
-	data: string;
+  utcTime: Date;
+  operation: string;
+  description: string;
+  data: string;
 }
 
 export function initFile(schemaBuilder: SchemaBuilderType) {
-	schemaBuilder.prismaObject('File', {
-		fields: (t) => ({
-			id: t.expose('id', { type: 'BigInt' }),
-			name: t.exposeString('name'),
-			jsonData: t.exposeString('jsonData'),
-			portpholioId: t.expose('portpholioId', { type: 'BigInt' }),
-			portpholio: t.relation('portpholio'),
-			earns: t.relation('earns'),
-			transactions: t.relation('transactions'),
-			transfers: t.relation('transfers'),
-		}),
-	});
+  schemaBuilder.prismaObject('File', {
+    fields: (t) => ({
+      id: t.expose('id', { type: 'BigInt' }),
+      name: t.exposeString('name'),
+      jsonData: t.exposeString('jsonData'),
+      portfolioId: t.expose('portfolioId', { type: 'BigInt' }),
+      portfolio: t.relation('portfolio'),
+      earns: t.relation('earns'),
+      transactions: t.relation('transactions'),
+      transfers: t.relation('transfers'),
+    }),
+  });
 
-	schemaBuilder.queryFields((t) => ({
-		filesByPortpholioId: t.prismaField({
-			type: ['File'],
-			args: {
-				portpholioId: t.arg({ type: 'BigInt', required: true }),
-			},
-			resolve: async (_query, _root, args, _context, _info) => {
-				return await prisma.file.findMany({
-					where: { portpholioId: args.portpholioId },
-				});
-			},
-		}),
-	}));
+  schemaBuilder.queryFields((t) => ({
+    filesByPortfolioId: t.prismaField({
+      type: ['File'],
+      args: {
+        portfolioId: t.arg({ type: 'BigInt', required: true }),
+      },
+      resolve: async (_query, _root, args, _context, _info) => {
+        return await prisma.file.findMany({
+          where: { portfolioId: args.portfolioId },
+        });
+      },
+    }),
+  }));
 
-	const FileJsonData = schemaBuilder.inputType('FileJsonData', {
-		fields: (t) => ({
-			utcTime: t.string({ required: true }),
-			operation: t.string({ required: true }),
-			description: t.string({ required: true }),
-			data: t.string({ required: true }),
-		}),
-	});
+  const FileJsonData = schemaBuilder.inputType('FileJsonData', {
+    fields: (t) => ({
+      utcTime: t.string({ required: true }),
+      operation: t.string({ required: true }),
+      description: t.string({ required: true }),
+      data: t.string({ required: true }),
+    }),
+  });
 
-	schemaBuilder.mutationFields((t) => ({
-		importFile: t.prismaField({
-			type: ['File'],
-			args: {
-				portpholioId: t.arg({ type: 'BigInt', required: true }),
-				name: t.arg.string({ required: true }),
-				jsonData: t.arg({ type: [FileJsonData], required: true }),
-			},
-			resolve: async (_query, _root, args, _context, _info) => {
-				const portpholio: PrismaTypes.Portpholio = await getPortpholioById(args.portpholioId, prisma);
-				const walletRecords: Array<PrismaTypes.Wallet> = await getWalletRecordsByPortpholioId(args.portpholioId, prisma);
+  schemaBuilder.mutationFields((t) => ({
+    importFile: t.prismaField({
+      type: ['File'],
+      args: {
+        portfolioId: t.arg({ type: 'BigInt', required: true }),
+        name: t.arg.string({ required: true }),
+        jsonData: t.arg({ type: [FileJsonData], required: true }),
+      },
+      resolve: async (_query, _root, args, _context, _info) => {
+        const portfolio: PrismaTypes.Portfolio = await getPortfolioById(args.portfolioId, prisma);
+        const walletRecords: Array<PrismaTypes.Wallet> = await getWalletRecordsByPortfolioId(args.portfolioId, prisma);
 
-				const data = await processFileExport(
-					args.jsonData.map((obj) => {
-						return {
-							utcTime: moment(obj.utcTime).toDate(),
-							operation: obj.operation,
-							description: obj.description,
-							data: obj.data,
-						};
-					}),
-					walletRecords,
-					prisma,
-				);
+        const data = await processFileExport(
+          args.jsonData.map((obj) => {
+            return {
+              utcTime: moment(obj.utcTime).toDate(),
+              operation: obj.operation,
+              description: obj.description,
+              data: obj.data,
+            };
+          }),
+          walletRecords,
+          prisma,
+        );
 
-				return await prisma.file.findMany({ where: { portpholioId: args.portpholioId } });
-			},
-		}),
-	}));
+        return await prisma.file.findMany({ where: { portfolioId: args.portfolioId } });
+      },
+    }),
+  }));
 }
 
 /*
@@ -86,7 +86,7 @@ export const Mutation = mutationField((t) => {
   t.field('importFile', {
     type: 'File',
     args: {
-      portpholioId: nonNull('BigInt'),
+      portfolioId: nonNull('BigInt'),
       name: nonNull(stringArg()),
       jsonData: nonNull(
         list(
@@ -117,13 +117,13 @@ export const Mutation = mutationField((t) => {
         },
       )
 
-      const portpholio: PrismaTypes.Portpholio = await getPortpholioById(
-        args.portpholioId,
+      const portfolio: PrismaTypes.Portfolio = await getPortfolioById(
+        args.portfolioId,
         ctx.prisma,
       )
 
       const walletRecords: Array<PrismaTypes.Wallet> =
-        await getWalletRecordsByPortpholioId(args.portpholioId, ctx.prisma)
+        await getWalletRecordsByPortfolioId(args.portfolioId, ctx.prisma)
 
       const data = await processExportData(
         exportData,
@@ -135,9 +135,9 @@ export const Mutation = mutationField((t) => {
       prismaPromises.push(
         ctx.prisma.file.create({
           data: {
-            portpholio: {
+            portfolio: {
               connect: {
-                id: args.portpholioId,
+                id: args.portfolioId,
               },
             },
             name: args.name,
@@ -147,12 +147,12 @@ export const Mutation = mutationField((t) => {
           },
         }),
       )
-      const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortpholioInput> =
+      const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortfolioInput> =
         Array.from(data.wallet, (obj) => {
           return {
             where: {
-              portpholioId_coin_unique: {
-                portpholioId: portpholio.id,
+              portfolioId_coin_unique: {
+                portfolioId: portfolio.id,
                 coin: obj.coin,
               },
             },
@@ -170,9 +170,9 @@ export const Mutation = mutationField((t) => {
           }
         })
       prismaPromises.push(
-        ctx.prisma.portpholio.update({
+        ctx.prisma.portfolio.update({
           where: {
-            id: portpholio.id,
+            id: portfolio.id,
           },
           data: {
             wallet: {

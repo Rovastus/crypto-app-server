@@ -11,7 +11,7 @@ datasource db {
   url      = env("DATABASE_URL_WITH_SCHEMA")
 }
 
-model Portpholio {
+model Portfolio {
   id              BigInt          @id @default(autoincrement()) @db.BigInt
   name            String          @unique
   taxMethod       TaxMethodEnum
@@ -25,8 +25,8 @@ model File {
   id           BigInt        @id @default(autoincrement()) @db.BigInt
   name         String        @unique
   jsonData     String
-  portpholioId BigInt
-  portpholio   Portpholio    @relation(fields: [portpholioId], references: [id])
+  portfolioId BigInt
+  portfolio   Portfolio    @relation(fields: [portfolioId], references: [id])
   earns        Earn[]
   transactions Transaction[]
   transfers    Transfer[]
@@ -38,10 +38,10 @@ model Wallet {
   amount          Decimal    @db.Decimal(65, 20)
   avcoFiatPerUnit Decimal    @db.Decimal(65, 20)
   totalFiat       Decimal    @db.Decimal(65, 20)
-  portpholioId    BigInt
-  portpholio      Portpholio @relation(fields: [portpholioId], references: [id])
+  portfolioId    BigInt
+  portfolio      Portfolio @relation(fields: [portfolioId], references: [id])
 
-  @@unique([portpholioId, coin], name: "portpholioId_coin_unique")
+  @@unique([portfolioId, coin], name: "portfolioId_coin_unique")
 }
 
 model WalletHistory {
@@ -54,8 +54,8 @@ model WalletHistory {
   newAvcoFiatPerUnit Decimal    @db.Decimal(65, 20)
   newTotalFiat       Decimal    @db.Decimal(65, 20)
   time               DateTime
-  portpholioId       BigInt
-  portpholio         Portpholio @relation(fields: [portpholioId], references: [id])
+  portfolioId       BigInt
+  portfolio         Portfolio @relation(fields: [portfolioId], references: [id])
 }
 
 model Transaction {

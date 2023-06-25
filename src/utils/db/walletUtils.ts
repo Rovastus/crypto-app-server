@@ -1,14 +1,14 @@
 import * as PrismaTypes from '.prisma/client';
 
-export const getWalletRecordsByPortpholioId = async function getWalletRecordsByPortpholioId(
-	portpholioId: number | bigint,
-	prisma: PrismaTypes.PrismaClient,
+export const getWalletRecordsByPortfolioId = async function getWalletRecordsByPortfolioId(
+  portfolioId: number | bigint,
+  prisma: PrismaTypes.PrismaClient,
 ): Promise<PrismaTypes.Wallet[]> {
-	const walletRecords: PrismaTypes.Wallet[] | null = await prisma.wallet.findMany({ where: { portpholioId: portpholioId } });
+  const walletRecords: PrismaTypes.Wallet[] | null = await prisma.wallet.findMany({ where: { portfolioId: portfolioId } });
 
-	if (!walletRecords) {
-		return [];
-	}
+  if (!walletRecords) {
+    return [];
+  }
 
-	return walletRecords;
+  return walletRecords;
 };

@@ -8,13 +8,13 @@ CREATE TYPE "FiatEnum" AS ENUM ('EUR');
 CREATE TYPE "TransactionTaxEventTypeEnum" AS ENUM ('FEE', 'BUY');
 
 -- CreateTable
-CREATE TABLE "Portpholio" (
+CREATE TABLE "Portfolio" (
     "id" BIGSERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "taxMethod" "TaxMethodEnum" NOT NULL,
     "fiat" "FiatEnum" NOT NULL,
 
-    CONSTRAINT "Portpholio_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Portfolio_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -22,7 +22,7 @@ CREATE TABLE "File" (
     "id" BIGSERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "jsonData" TEXT NOT NULL,
-    "portpholioId" BIGINT NOT NULL,
+    "portfolioId" BIGINT NOT NULL,
 
     CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
@@ -34,7 +34,7 @@ CREATE TABLE "Wallet" (
     "amount" DECIMAL(65,20) NOT NULL,
     "avcoFiatPerUnit" DECIMAL(65,20) NOT NULL,
     "totalFiat" DECIMAL(65,20) NOT NULL,
-    "portpholioId" BIGINT NOT NULL,
+    "portfolioId" BIGINT NOT NULL,
 
     CONSTRAINT "Wallet_pkey" PRIMARY KEY ("id")
 );
@@ -50,7 +50,7 @@ CREATE TABLE "WalletHistory" (
     "newAvcoFiatPerUnit" DECIMAL(65,20) NOT NULL,
     "newTotalFiat" DECIMAL(65,20) NOT NULL,
     "time" TIMESTAMP(3) NOT NULL,
-    "portpholioId" BIGINT NOT NULL,
+    "portfolioId" BIGINT NOT NULL,
 
     CONSTRAINT "WalletHistory_pkey" PRIMARY KEY ("id")
 );
@@ -134,13 +134,13 @@ CREATE TABLE "CoinPair" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Portpholio_name_key" ON "Portpholio"("name");
+CREATE UNIQUE INDEX "Portfolio_name_key" ON "Portfolio"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "File_name_key" ON "File"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Wallet_portpholioId_coin_key" ON "Wallet"("portpholioId", "coin");
+CREATE UNIQUE INDEX "Wallet_portfolioId_coin_key" ON "Wallet"("portfolioId", "coin");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CoinPairPriceHistory_time_coinPairId_key" ON "CoinPairPriceHistory"("time", "coinPairId");
@@ -149,13 +149,13 @@ CREATE UNIQUE INDEX "CoinPairPriceHistory_time_coinPairId_key" ON "CoinPairPrice
 CREATE UNIQUE INDEX "CoinPair_pair_key" ON "CoinPair"("pair");
 
 -- AddForeignKey
-ALTER TABLE "File" ADD CONSTRAINT "File_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "File" ADD CONSTRAINT "File_portfolioId_fkey" FOREIGN KEY ("portfolioId") REFERENCES "Portfolio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Wallet" ADD CONSTRAINT "Wallet_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Wallet" ADD CONSTRAINT "Wallet_portfolioId_fkey" FOREIGN KEY ("portfolioId") REFERENCES "Portfolio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "WalletHistory" ADD CONSTRAINT "WalletHistory_portpholioId_fkey" FOREIGN KEY ("portpholioId") REFERENCES "Portpholio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "WalletHistory" ADD CONSTRAINT "WalletHistory_portfolioId_fkey" FOREIGN KEY ("portfolioId") REFERENCES "Portfolio"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
