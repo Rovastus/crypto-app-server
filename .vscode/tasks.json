@@ -22,6 +22,17 @@
             "label": "BE dev"
         }
       }
+    },
+    {
+      "type": "npm",
+      "script": "lint",
+      "problemMatcher": [],
+      "label": "BE",
+      "options": {
+        "statusbar": {
+            "label": "BE lint"
+        }
+      }
     }
   ]
 }

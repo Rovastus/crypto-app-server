@@ -4,11 +4,7 @@ export const getWalletRecordsByPortfolioId = async function getWalletRecordsByPo
   portfolioId: number | bigint,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<PrismaTypes.Wallet[]> {
-  const walletRecords: PrismaTypes.Wallet[] | null = await prisma.wallet.findMany({ where: { portfolioId: portfolioId } });
-
-  if (!walletRecords) {
-    return [];
-  }
+  const walletRecords = await prisma.wallet.findMany({ where: { portfolioId: portfolioId } });
 
   return walletRecords;
 };
