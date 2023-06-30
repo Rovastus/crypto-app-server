@@ -1,38 +1,38 @@
 {
 	"version": "2.0.0",
 	"tasks": [
-    {
-      "type": "npm",
-      "script": "generate",
-      "problemMatcher": [],
-      "label": "BE",
-      "options": {
-        "statusbar": {
-            "label": "BE generate"
-        }
-      }
-    },
-    {
-      "type": "npm",
-      "script": "dev",
-      "problemMatcher": [],
-      "label": "BE",
-      "options": {
-        "statusbar": {
-            "label": "BE dev"
-        }
-      }
-    },
-    {
-      "type": "npm",
-      "script": "lint",
-      "problemMatcher": [],
-      "label": "BE",
-      "options": {
-        "statusbar": {
-            "label": "BE lint"
-        }
-      }
-    }
-  ]
+		{
+			"type": "npm",
+			"script": "generate",
+			"problemMatcher": [],
+			"label": "BE",
+			"options": {
+				"statusbar": {
+					"label": "$(database) BE generate"
+				}
+			}
+		},
+		{
+			"type": "npm",
+			"script": "dev",
+			"problemMatcher": [],
+			"label": "BE",
+			"options": {
+				"statusbar": {
+					"label": "$(play) BE dev"
+				}
+			}
+		},
+		{
+			"type": "npm",
+			"script": "lint",
+			"problemMatcher": [],
+			"label": "BE",
+			"options": {
+				"statusbar": {
+					"label": "$(lightbulb) BE lint"
+				}
+			}
+		}
+	]
 }
