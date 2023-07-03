@@ -20,7 +20,7 @@ export function initPortfolio(schemaBuilder: SchemaBuilderType) {
       type: ['Portfolio'],
       args: {},
       resolve: async (query, _root, _args, _context, _info) => {
-        return await prisma.portfolio.findMany({ ...query });
+        return prisma.portfolio.findMany({ ...query });
       },
     }),
   }));
@@ -34,8 +34,7 @@ export function initPortfolio(schemaBuilder: SchemaBuilderType) {
         fiat: t.arg({ type: FiatEnum, required: true }),
       },
       resolve: async (_query, _parent, args, _context, _info) => {
-        const portfolio = await prisma.portfolio.create({ data: { ...args } });
-        return portfolio;
+        return prisma.portfolio.create({ data: { ...args } });
       },
     }),
   }));

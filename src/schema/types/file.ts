@@ -34,7 +34,7 @@ export function initFile(schemaBuilder: SchemaBuilderType) {
         portfolioId: t.arg({ type: 'BigInt', required: true }),
       },
       resolve: async (_query, _root, args, _context, _info) => {
-        return await prisma.file.findMany({
+        return prisma.file.findMany({
           where: { portfolioId: args.portfolioId },
         });
       },
@@ -90,29 +90,28 @@ export function initFile(schemaBuilder: SchemaBuilderType) {
               transactions: { create: data.transactions },
             },
           }),
-        )
-        const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortfolioInput> =
-          Array.from(data.wallets, (obj) => {
-            return {
-              where: {
-                portfolioId_coin_unique: {
-                  portfolioId: portfolio.id,
-                  coin: obj.coin,
-                },
-              },
-              update: {
-                amount: obj.amount,
-                avcoFiatPerUnit: obj.avcoFiatPerUnit,
-                totalFiat: obj.totalFiat,
-              },
-              create: {
+        );
+        const walletUpsert: Array<PrismaTypes.Prisma.WalletUpsertWithWhereUniqueWithoutPortfolioInput> = Array.from(data.wallets, (obj) => {
+          return {
+            where: {
+              portfolioId_coin_unique: {
+                portfolioId: portfolio.id,
                 coin: obj.coin,
-                amount: obj.amount,
-                avcoFiatPerUnit: obj.avcoFiatPerUnit,
-                totalFiat: obj.totalFiat,
               },
-            }
-          })
+            },
+            update: {
+              amount: obj.amount,
+              avcoFiatPerUnit: obj.avcoFiatPerUnit,
+              totalFiat: obj.totalFiat,
+            },
+            create: {
+              coin: obj.coin,
+              amount: obj.amount,
+              avcoFiatPerUnit: obj.avcoFiatPerUnit,
+              totalFiat: obj.totalFiat,
+            },
+          };
+        });
         prismaPromises.push(
           prisma.portfolio.update({
             where: {
@@ -127,7 +126,7 @@ export function initFile(schemaBuilder: SchemaBuilderType) {
               },
             },
           }),
-        )
+        );
 
         return (await prisma.$transaction([...prismaPromises]))[0] as PrismaTypes.File;
       },

@@ -25,7 +25,7 @@ export function initTransaction(schemaBuilder: SchemaBuilderType) {
       },
       resolve: async (_query, _root, args, _context, _info) => {
         const fileIds: Array<{ id: bigint }> = await prisma.file.findMany({ select: { id: true }, where: { portfolioId: args.portfolioId } });
-        return await prisma.transaction.findMany({ where: { fileId: { in: fileIds.map((id) => id.id) } } });
+        return prisma.transaction.findMany({ where: { fileId: { in: fileIds.map((id) => id.id) } } });
       },
     }),
   }));

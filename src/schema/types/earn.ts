@@ -20,7 +20,7 @@ export function initEarn(schemaBuilder: SchemaBuilderType) {
       },
       resolve: async (_query, _root, args, _context, _info) => {
         const fileIds: Array<{ id: bigint }> = await prisma.file.findMany({ select: { id: true }, where: { portfolioId: args.portfolioId } });
-        return await prisma.earn.findMany({ where: { fileId: { in: fileIds.map((id) => id.id) } } });
+        return prisma.earn.findMany({ where: { fileId: { in: fileIds.map((id) => id.id) } } });
       },
     }),
   }));
