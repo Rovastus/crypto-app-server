@@ -25,18 +25,6 @@ export function initPortfolio(schemaBuilder: SchemaBuilderType) {
     }),
   }));
 
-  schemaBuilder.queryFields((t) => ({
-    getPortfolioById: t.prismaField({
-      type: 'Portfolio',
-      args: {
-        portfolioId: t.arg({ type: 'BigInt', required: true }),
-      },
-      resolve: async (query, _root, args, _context, _info) => {
-        return await prisma.portfolio.findUniqueOrThrow({ ...query, where: { id: args.portfolioId } });
-      },
-    }),
-  }));
-
   schemaBuilder.mutationFields((t) => ({
     createPortfolio: t.prismaField({
       type: 'Portfolio',

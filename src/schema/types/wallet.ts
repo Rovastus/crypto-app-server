@@ -1,3 +1,4 @@
+import { prisma } from '../db';
 import { SchemaBuilderType } from '../schema';
 
 export function initWallet(schemaBuilder: SchemaBuilderType) {
@@ -12,4 +13,16 @@ export function initWallet(schemaBuilder: SchemaBuilderType) {
       portfolio: t.relation('portfolio'),
     }),
   });
+
+  schemaBuilder.queryFields((t) => ({
+    getWalletsByPortfolioId: t.prismaField({
+      type: ['Wallet'],
+      args: {
+        portfolioId: t.arg({ type: 'BigInt', required: true }),
+      },
+      resolve: async (query, _root, args, _context, _info) => {
+        return await prisma.wallet.findMany({ ...query, where: { portfolioId: args.portfolioId } });
+      },
+    }),
+  }));
 }
