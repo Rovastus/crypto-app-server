@@ -59,7 +59,7 @@ export const processTransaction = async function processTransaction(
     buyCoin: transactionJsonData.buyCoin,
     price: transactionJsonData.price,
     priceCoin: transactionJsonData.priceCoin,
-    fee: transactionJsonData.price,
+    fee: transactionJsonData.fee,
     feeCoin: transactionJsonData.feeCoin,
     time: row.utcTime,
     transactionTaxEvents: {
