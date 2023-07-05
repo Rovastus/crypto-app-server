@@ -38,7 +38,7 @@ export const processTransaction = async function processTransaction(
   processData: ProcessDataOutputI,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<void> {
-  const transactionJsonData = createTransactionJsonData(row.data);
+  const transactionJsonData = createTransactionJsonData(row);
 
   const buyWallet: undefined | WalletI = getWalletIfCoinNotFiat(processData.wallets, transactionJsonData.buyCoin);
   const priceWallet: undefined | WalletI = getWalletIfCoinNotFiat(processData.wallets, transactionJsonData.priceCoin);
@@ -86,7 +86,7 @@ export const processTransaction = async function processTransaction(
     if (isCoinFiat(transactionJsonData.priceCoin)) {
       priceFiatValue = totalPrice;
     } else {
-      const priceCoinInFiat = await getPricePerCoinInFiat(transactionJsonData.priceCoin, PrismaTypes.FiatEnum.EUR, row.utcTime, prisma);
+      const priceCoinInFiat = await getPricePerCoinInFiat(transactionJsonData.priceCoin, transactionJsonData.description, row.utcTime, prisma);
       priceFiatValue = totalPrice.mul(priceCoinInFiat);
     }
 
@@ -106,8 +106,8 @@ export const processTransaction = async function processTransaction(
   }
 };
 
-function createTransactionJsonData(data: string): TransactionJsonDataI {
-  const obj = JSON.parse(data);
+function createTransactionJsonData(row: FileJsonDataI): TransactionJsonDataI {
+  const obj = JSON.parse(row.data);
 
   return {
     buy: new Decimal(obj.buy),
@@ -116,7 +116,7 @@ function createTransactionJsonData(data: string): TransactionJsonDataI {
     priceCoin: obj.priceCoin,
     fee: new Decimal(obj.fee),
     feeCoin: obj.feeCoin,
-    description: obj.description,
+    description: row.description,
   };
 }
 
@@ -150,7 +150,7 @@ async function pushTransactionBuyTaxEvent(
     gainInFiat = transaction.buy;
   } else {
     // Gain in coin (e.g. BTC)
-    const fiatPricePerCoin = await getPricePerCoinInFiat(transaction.buyCoin, PrismaTypes.FiatEnum.EUR, time, prisma);
+    const fiatPricePerCoin = await getPricePerCoinInFiat(transaction.buyCoin, transaction.description, time, prisma);
     gainInFiat = transaction.buy.mul(fiatPricePerCoin);
   }
 
@@ -164,7 +164,7 @@ async function pushTransactionBuyTaxEvent(
     feeInFiat = new Decimal(transactionTaxEvents[0].gainInFiat);
   } else {
     // calculate price of fee
-    const fiatPricePerFeeCoin = await getPricePerCoinInFiat(transaction.feeCoin, PrismaTypes.FiatEnum.EUR, time, prisma);
+    const fiatPricePerFeeCoin = await getPricePerCoinInFiat(transaction.feeCoin, transaction.description, time, prisma);
     feeInFiat = fiatPricePerFeeCoin.mul(transaction.fee);
   }
 
@@ -185,7 +185,7 @@ async function pushTransactionFeeTaxEvent(
   time: Date,
   prisma: PrismaTypes.PrismaClient,
 ): Promise<void> {
-  const fiatPricePerCoin = await getPricePerCoinInFiat(transaction.feeCoin, PrismaTypes.FiatEnum.EUR, time, prisma);
+  const fiatPricePerCoin = await getPricePerCoinInFiat(transaction.feeCoin, transaction.description, time, prisma);
   const gainInFiat = transaction.fee.mul(fiatPricePerCoin);
   const expensesInFiat = transaction.fee.mul(feeWallet.avcoFiatPerUnit);
 
