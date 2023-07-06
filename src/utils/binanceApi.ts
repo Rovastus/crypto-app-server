@@ -1,6 +1,11 @@
 import * as PrismaTypes from '.prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import * as axios from 'axios';
+import { setTimeout } from 'timers/promises';
+
+const LIMIT_CALLS = 20;
+const WAIT_TIME = 60000;
+let callsCount = 0;
 
 export const getBinanceCoinPairs = async function getBinanceCoinPairs(): Promise<Array<PrismaTypes.Prisma.CoinPairCreateInput>> {
   const list: Array<PrismaTypes.Prisma.CoinPairCreateInput> = [];
@@ -18,7 +23,7 @@ export const getBinancePricePerCoinInFiat = async function getBinancePricePerCoi
   prisma: PrismaTypes.PrismaClient,
 ): Promise<Decimal> {
   if ('BETH' === fromCoin) {
-    return getBethPrice(toFiat, time, prisma);
+    return await getBethPrice(toFiat, time, prisma);
   }
 
   let symbol = await getSymbol(fromCoin + toFiat, prisma);
@@ -57,9 +62,8 @@ export const getBinancePricePerCoinInFiat = async function getBinancePricePerCoi
   return coinUSDTPrice.div(fiatUSDTPrice).toDecimalPlaces(8);
 };
 
-async function getSymbol(symbol: string, prisma: PrismaTypes.PrismaClient): Promise<PrismaTypes.CoinPair | null> {
-  const coinPair: PrismaTypes.CoinPair | null = await prisma.coinPair.findUnique({ where: { pair: symbol } });
-  return coinPair;
+function getSymbol(symbol: string, prisma: PrismaTypes.PrismaClient): Promise<PrismaTypes.CoinPair | null> {
+  return prisma.coinPair.findUnique({ where: { pair: symbol } });
 }
 
 async function getCoinPairPriceHistory(coinPairId: bigint, time: Date, prisma: PrismaTypes.PrismaClient): Promise<PrismaTypes.CoinPairPriceHistory | null> {
@@ -78,6 +82,12 @@ async function getCoinPriceFromBinanceApi(symbol: PrismaTypes.CoinPair, time: Da
   const coinPairPriceHistory = await getCoinPairPriceHistory(symbol.id, time, prisma);
   if (coinPairPriceHistory) {
     return coinPairPriceHistory.price;
+  }
+
+  // limit wait
+  if (LIMIT_CALLS === callsCount) {
+    await setTimeout(WAIT_TIME);
+    callsCount = 0;
   }
 
   // Binance API call

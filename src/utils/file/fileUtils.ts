@@ -52,7 +52,8 @@ export const processFileExport = async function processFileExport(
     earns: new Array<EarnI>(),
   };
 
-  fileData.forEach(async (row) => {
+  for (let i = 0; i < fileData.length; i++) {
+    const row = fileData[i];
     switch (row.operation) {
       case 'Transaction':
         await processTransaction(row, processData, prisma);
@@ -66,7 +67,7 @@ export const processFileExport = async function processFileExport(
       default:
         throw Error(`Operation ${row.operation} not supported. Data: ${row}`);
     }
-  });
+  }
 
   return processData;
 };

@@ -2,9 +2,9 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { WalletHistoryI, WalletI } from './fileUtils';
 
 export const getRecordFromWallet = function getRecordFromWallet(wallets: Array<WalletI>, coin: string): WalletI {
-  const record: Array<WalletI> = wallets.filter((obj) => obj.coin === coin);
+  const record: WalletI | undefined = wallets.find((obj) => obj.coin === coin);
 
-  if (record.length === 0) {
+  if (!record) {
     const newRecord: WalletI = {
       coin: coin,
       amount: new Decimal(0),
@@ -15,7 +15,7 @@ export const getRecordFromWallet = function getRecordFromWallet(wallets: Array<W
     return newRecord;
   }
 
-  return record[0];
+  return record;
 };
 
 // take update operation
