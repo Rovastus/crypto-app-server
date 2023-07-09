@@ -27,7 +27,7 @@ export function initTransaction(schemaBuilder: SchemaBuilderType) {
       resolve: async (_query, _root, args, _context, _info) => {
         const fileIds: Array<{ id: bigint }> = await prisma.file.findMany({ select: { id: true }, where: { portfolioId: args.portfolioId } });
 
-        const gte = new Date(args.year, 0, 1);
+        const gte = new Date(args.year, 0, 1, 0, 0, 0, 0);
         const lte = new Date(args.year, 11, 31, 23, 59, 59, 999);
 
         return prisma.transaction.findMany({
