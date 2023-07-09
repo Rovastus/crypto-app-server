@@ -22,10 +22,23 @@ export function initTransaction(schemaBuilder: SchemaBuilderType) {
       type: ['Transaction'],
       args: {
         portfolioId: t.arg({ type: 'BigInt', required: true }),
+        year: t.arg.int({ required: true }),
       },
       resolve: async (_query, _root, args, _context, _info) => {
         const fileIds: Array<{ id: bigint }> = await prisma.file.findMany({ select: { id: true }, where: { portfolioId: args.portfolioId } });
-        return prisma.transaction.findMany({ where: { fileId: { in: fileIds.map((id) => id.id) } } });
+
+        const gte = new Date(args.year, 0, 1);
+        const lte = new Date(args.year, 11, 31, 23, 59, 59, 999);
+
+        return prisma.transaction.findMany({
+          where: {
+            fileId: { in: fileIds.map((id) => id.id) },
+            time: {
+              gte,
+              lte,
+            },
+          },
+        });
       },
     }),
   }));
