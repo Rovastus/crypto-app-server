@@ -1,11 +1,18 @@
 import * as PrismaTypes from '.prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
-export const getCoinPairPriceKraken = async function getCoinPairPriceHistoryKraken(
-  coinPair: string,
-  time: Date,
-  prisma: PrismaTypes.PrismaClient,
-): Promise<Decimal> {
+export const getCoinPairPriceKraken = async function getCoinPairPriceKraken(coinPair: string, time: Date, prisma: PrismaTypes.PrismaClient): Promise<Decimal> {
+  if (coinPair === 'ETH2EUR') {
+    const eth2EthPrice = await getCoinPairPriceHistoryKraken('ETH2ETH', time, prisma);
+    const ethEurPrice = await getCoinPairPriceHistoryKraken('ETHEUR', time, prisma);
+
+    return eth2EthPrice.mul(ethEurPrice);
+  }
+
+  return getCoinPairPriceHistoryKraken(coinPair, time, prisma);
+};
+
+async function getCoinPairPriceHistoryKraken(coinPair: string, time: Date, prisma: PrismaTypes.PrismaClient): Promise<Decimal> {
   const coinPairPriceHistoryKrakenLTE: PrismaTypes.CoinPairPriceHistoryKraken | null = await prisma.coinPairPriceHistoryKraken.findFirst({
     where: {
       coinPair: coinPair,
@@ -41,4 +48,4 @@ export const getCoinPairPriceKraken = async function getCoinPairPriceHistoryKrak
   }
 
   return coinPairPriceHistoryKrakenGTE.openPrice;
-};
+}
