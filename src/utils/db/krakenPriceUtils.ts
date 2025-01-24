@@ -18,6 +18,7 @@ async function getCoinPairPriceHistoryKraken(coinPair: string, time: Date, prism
       coinPair: coinPair,
       time: { lte: time },
     },
+    orderBy: { time: 'desc' },
   });
   const coinPairPriceHistoryKrakenGTE: PrismaTypes.CoinPairPriceHistoryKraken | null = await prisma.coinPairPriceHistoryKraken.findFirst({
     where: {

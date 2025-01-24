@@ -32,8 +32,14 @@ export const processEarn = function processEarn(row: FileJsonDataI, processData:
 function createEarnJsonData(data: string): EarnJsonDataI {
   const obj = JSON.parse(data);
 
+  let amount = new Decimal(obj.amount);
+
+  if (obj.fee !== undefined) {
+    amount = amount.minus(new Decimal(obj.fee));
+  }
+
   return {
-    amount: new Decimal(obj.amount),
+    amount: amount,
     coin: obj.coin,
   };
 }
